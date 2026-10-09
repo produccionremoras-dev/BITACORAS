@@ -185,6 +185,30 @@
   .thumb-preview{width:100%;aspect-ratio:16/9;border-radius:8px;overflow:hidden;background:var(--grey-pale);margin-top:8px;display:flex;align-items:center;justify-content:center;color:var(--ink-soft);font-size:12px;}
   .thumb-preview img{width:100%;height:100%;object-fit:cover;}
 
+  .pend-badge{position:absolute;top:6px;right:6px;font-size:10px;font-weight:700;padding:2px 7px;border-radius:999px;letter-spacing:.04em;text-transform:uppercase;background:#FFF1CC;color:#8A5A00;border:1px solid #EBCB7A;}
+  .stage-hint{font-size:11.5px;color:var(--ink-soft);margin-top:5px;min-height:14px;}
+  .bell-wrap{position:relative;display:inline-flex;}
+  .bell-btn{background:rgba(255,255,255,.12);border:none;color:#fff;width:36px;height:36px;border-radius:50%;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;position:relative;}
+  .bell-btn:hover{background:rgba(255,255,255,.22);}
+  .bell-count{position:absolute;top:-3px;right:-3px;background:#E5484D;color:#fff;font-size:10px;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:none;align-items:center;justify-content:center;padding:0 4px;}
+  .notif-panel{display:none;position:absolute;right:0;top:44px;width:320px;max-height:360px;overflow:auto;background:#fff;color:var(--ink);border-radius:10px;box-shadow:0 8px 28px rgba(15,33,64,.3);z-index:70;padding:6px;}
+  .notif-panel.open{display:block;}
+  .notif-item{padding:9px 10px;border-radius:7px;font-size:12.5px;border-bottom:1px solid var(--border);cursor:pointer;}
+  .notif-item:hover{background:var(--grey-pale);}
+  .notif-item.unread{background:var(--sky-pale);}
+  .notif-item b{color:var(--navy);font-size:11.5px;}
+  .notif-item small{display:block;color:var(--ink-soft);margin-top:2px;}
+  .notif-empty{padding:16px;text-align:center;color:var(--ink-soft);font-size:12.5px;}
+  .gantt-box{width:min(1280px,100%);max-height:92vh;}
+  .gantt-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
+  .gantt-info{font-size:12.5px;color:var(--ink-soft);}
+  .gantt-actions{display:flex;gap:8px;}
+  .gantt-tabs{display:flex;gap:6px;flex-wrap:wrap;}
+  .gtab{font-family:var(--font-head);font-size:12px;padding:5px 12px;border:1px solid var(--border);border-radius:999px;background:#fff;color:var(--ink);cursor:pointer;}
+  .gtab.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .gantt-view{overflow:auto;border:1px solid var(--border);border-radius:8px;max-height:68vh;background:#fff;}
+  table.gx{border-collapse:collapse;table-layout:fixed;}
+  table.gx td{border:1px solid #E3E8F0;padding:1px 4px;overflow:hidden;white-space:nowrap;font-size:12px;line-height:1.25;vertical-align:middle;}
   .login-modal, .admin-modal{position:fixed;inset:0;background:rgba(15,33,64,.55);display:none;align-items:center;justify-content:center;z-index:60;padding:20px;}
   .login-modal.open, .admin-modal.open{display:flex;}
   .login-box{background:#fff;border-radius:12px;padding:24px;width:320px;display:flex;flex-direction:column;gap:12px;}
@@ -288,8 +312,13 @@
       <p>Grabación → Edición → Revisión 1 → Prevención → Operaciones → Finalizado.</p>
     </div>
     <div class="top-actions">
+      <button class="btn btn-ghost" id="btnGantt" style="display:none;">Carta Gantt</button>
       <button class="btn btn-ghost" id="btnUsuarios" style="display:none;">Usuarios</button>
       <button class="btn btn-primary" id="btnNew" style="display:none;">+ Nuevo procedimiento</button>
+      <span class="bell-wrap" id="bellWrap" style="display:none;">
+        <button class="bell-btn" id="btnBell" type="button" title="Notificaciones"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.7 21a2 2 0 0 1-3.4 0"></path></svg><span class="bell-count" id="bellCount">0</span></button>
+        <div class="notif-panel" id="notifPanel"></div>
+      </span>
       <button class="avatar-btn" id="btnAvatar" type="button" title="Cambiar mi foto de perfil" style="display:none;"></button>
       <input type="file" id="avatarFile" accept="image/png,image/jpeg,image/webp" style="display:none;">
       <button class="btn btn-ghost" id="btnLogout">Cerrar sesión</button>
@@ -362,6 +391,25 @@
       </select>
       <button type="submit" class="btn btn-primary" style="grid-column:1/-1;">Crear usuario</button>
     </form>
+  </div>
+</div>
+
+<div class="admin-modal" id="ganttModal">
+  <div class="admin-box gantt-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <h3>Carta Gantt</h3>
+      <button class="drawer-close" id="ganttClose" style="color:var(--ink);">&times;</button>
+    </div>
+    <div class="gantt-bar">
+      <span class="gantt-info" id="ganttInfo">Cargando…</span>
+      <span class="gantt-actions">
+        <button class="btn btn-outline btn-sm" id="ganttDownload" type="button" style="display:none;">Descargar Excel</button>
+        <button class="btn btn-primary btn-sm" id="ganttUpload" type="button" style="display:none;">Subir / reemplazar Excel</button>
+        <input type="file" id="ganttFile" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none;">
+      </span>
+    </div>
+    <div class="gantt-tabs" id="ganttTabs"></div>
+    <div class="gantt-view" id="ganttView"></div>
   </div>
 </div>
 
@@ -484,6 +532,8 @@
 
     q("btnNew").style.display = isAdminOrGerencia() ? "" : "none";
     q("btnUsuarios").style.display = isAdmin() ? "" : "none";
+    q("btnGantt").style.display = canSeeGantt() ? "" : "none";
+    q("bellWrap").style.display = runtime.profile ? "" : "none";
     q("kpiWrap").style.display = isPrevencion() ? "none" : "";
     q("legend").style.display = isPrevencion() ? "none" : "flex";
   }
@@ -548,7 +598,7 @@
 
   function thumbHTML(item){
     var etapa = etapaActual(item);
-    var badge = '<span class="etapa-badge '+etapa+'">'+ETAPA_LABELS[etapa]+'</span>';
+    var badge = '<span class="etapa-badge '+etapa+'">'+ETAPA_LABELS[etapa]+'</span>' + (item.estado_grabacion==="Pendiente" ? '<span class="pend-badge">Pendiente</span>' : "");
     if (item.imagen_portada){
       return '<div class="card-thumb">'+badge+'<img src="'+escapeHtml(item.imagen_portada)+'" alt="" loading="lazy" onerror="this.parentElement.querySelector(\'img\').style.display=\'none\';"><span class="thumb-code">'+escapeHtml(item.codigo)+'</span></div>';
     }
@@ -796,7 +846,7 @@
         '<div class="field-row single"><div class="field"><label>Procedimiento</label>'+(canAdminGerencia?'<input type="text" id="f_nombre" value="'+escapeHtml(item.nombre)+'">':'<div class="readonly-value">'+escapeHtml(item.nombre)+'</div>')+'</div></div>'+
         '<div class="field-row">'+
           '<div class="field"><label>Modo</label>'+(canAdminGerencia?fieldSelect("f_modo",item.modo,modos,false):'<div class="readonly-value">'+escapeHtml(item.modo)+'</div>')+'</div>'+
-          '<div class="field"><label>Etapa</label>'+(canAdminGerencia?'<input type="text" id="f_etapa_titulo" value="'+escapeHtml(item.etapa_titulo)+'">':'<div class="readonly-value">'+escapeHtml(item.etapa_titulo)+'</div>')+'</div>'+
+          '<div class="field"><label>Etapa</label>'+(canAdminGerencia?stageSelectHTML(item):'<div class="readonly-value">'+escapeHtml(item.etapa_titulo)+'</div>')+'</div>'+
         '</div>'+
         (item.variante ? ('<div class="field-row single"><div class="field"><label>Variante</label>'+(canAdminGerencia?'<input type="text" id="f_variante" value="'+escapeHtml(item.variante)+'">':'<div class="readonly-value">'+escapeHtml(item.variante)+'</div>')+'</div></div>') : (canAdminGerencia?'<div class="field-row single"><div class="field"><label>Variante</label><input type="text" id="f_variante" value=""></div></div>':''))+
       '</div>';
@@ -837,6 +887,26 @@
   }
 
   function bindDrawerInteractions(item){
+    var stSel=q("f_etapa_num"), nmInp=q("f_nombre"), numInp=q("f_numero");
+    if (stSel){
+      var numTouched=false;
+      if (numInp) numInp.addEventListener("input", function(){ numTouched=true; });
+      stSel.addEventListener("change", function(){
+        if (state.isNew && numInp && !numTouched) numInp.value=nextNumberInStage(stSel.value);
+        q("stageHint").textContent="";
+      });
+      if (state.isNew && nmInp){
+        q("stageHint").textContent="Se ubica sola según el nombre (ej. «Instalación…»); puedes cambiarla aquí.";
+        nmInp.addEventListener("input", function(){
+          var m=detectStage(nmInp.value);
+          if (m && stSel.value!==m.num){
+            stSel.value=m.num;
+            if (numInp && !numTouched) numInp.value=nextNumberInStage(m.num);
+            q("stageHint").textContent="Asignado automáticamente a Etapa "+m.num+" · "+m.titulo+".";
+          }
+        });
+      }
+    }
     var legacyToggle = q("legacyToggle");
     if (legacyToggle) legacyToggle.addEventListener("click", function(){ q("legacyBox").classList.toggle("open"); });
 
@@ -940,6 +1010,38 @@
     });
   }
 
+  // ---------------- Etapas: número siguiente, detección automática y orden ----------------
+  function normTxt(t){ return String(t||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,""); }
+  function nextNumberInStage(num){
+    var mx=0;
+    state.data.forEach(function(i){ if (i.etapa_num===num){ var n=parseInt(i.numero,10); if (!isNaN(n) && n>mx) mx=n; } });
+    return String(mx+1);
+  }
+  // Si el nombre contiene la palabra de una etapa (ej. "Instalación"), devuelve esa etapa.
+  function detectStage(nombre){
+    var txt=normTxt(nombre), best=null, bestPos=1e9;
+    stageList().forEach(function(st){
+      normTxt(st.titulo).split(/[^a-z0-9]+/).forEach(function(w){
+        if (w.length<5) return;
+        var pos=txt.indexOf(w.slice(0,6));
+        if (pos!==-1 && pos<bestPos){ bestPos=pos; best=st; }
+      });
+    });
+    return best;
+  }
+  function sortProcedimientos(list){
+    return list.slice().sort(function(a,b){
+      var ea=parseInt(a.etapa_num,10)||0, eb=parseInt(b.etapa_num,10)||0; if (ea!==eb) return ea-eb;
+      var na=parseInt(a.numero,10), nb=parseInt(b.numero,10);
+      na=isNaN(na)?1e9:na; nb=isNaN(nb)?1e9:nb; if (na!==nb) return na-nb;
+      return String(a.codigo||"").localeCompare(String(b.codigo||""),undefined,{numeric:true});
+    });
+  }
+  function stageSelectHTML(item){
+    var opts=stageList().map(function(st){ return '<option value="'+escapeHtml(st.num)+'"'+(st.num===item.etapa_num?" selected":"")+'>Etapa '+escapeHtml(st.num)+' · '+escapeHtml(st.titulo)+'</option>'; }).join("");
+    return '<select id="f_etapa_num">'+opts+'</select><div class="stage-hint" id="stageHint"></div>';
+  }
+
   function newBlankItem(){
     // El siguiente número se calcula mirando TANTO el id como el código de todos los procedimientos
     // (pueden no coincidir) y se salta cualquier id ya usado, para no chocar con la llave primaria.
@@ -952,8 +1054,9 @@
     while (used[nextCode]){ nextNum++; nextCode="PRO-"+String(nextNum).padStart(3,"0"); }
     var stages=stageList();
     var lastStage=stages.length?stages[stages.length-1]:{num:"1",titulo:"NUEVA ETAPA",desc:""};
-    return { id:nextCode, numero:"", nombre:"", modo:"Único", variante:"", codigo:nextCode,
-      etapa_num: state.activeStage!=="todas"?state.activeStage:lastStage.num, etapa_titulo:lastStage.titulo, etapa_desc:lastStage.desc,
+    var tgt = stages.filter(function(x){ return x.num===state.activeStage; })[0] || lastStage;
+    return { id:nextCode, numero:nextNumberInStage(tgt.num), nombre:"", modo:"Único", variante:"", codigo:nextCode,
+      etapa_num: tgt.num, etapa_titulo:tgt.titulo, etapa_desc:tgt.desc,
       centro:"", barco:"", fecha_grabacion:null, estado_grabacion:"Pendiente", estado_edicion:"Pendiente",
       revision1_estado:"Pendiente", revision1_responsable:"", revision1_fecha:null,
       prevencion_estado:"Pendiente", prevencion_responsable_id:null, prevencion_fecha:null,
@@ -979,7 +1082,8 @@
   function collectForm(existing){
     var patch = Object.assign({}, existing);
     if (isAdminOrGerencia()){
-      ["numero","codigo","nombre","etapa_titulo","variante","centro","barco"].forEach(function(f){ var el=q("f_"+f); if (el) patch[f]=el.value; });
+      ["numero","codigo","nombre","variante","centro","barco"].forEach(function(f){ var el=q("f_"+f); if (el) patch[f]=el.value; });
+      if (q("f_etapa_num")){ var stSel = stageList().filter(function(x){ return x.num===q("f_etapa_num").value; })[0]; if (stSel){ patch.etapa_num=stSel.num; patch.etapa_titulo=stSel.titulo; patch.etapa_desc=stSel.desc; } }
       if (q("f_modo")) patch.modo = q("f_modo").value;
       if (q("f_fecha_grabacion")) patch.fecha_grabacion = q("f_fecha_grabacion").value || null;
       if (q("f_estado_grabacion")) patch.estado_grabacion = q("f_estado_grabacion").value;
@@ -1028,11 +1132,13 @@
           return runtime.supabase.from("procedimientos").insert(payload).then(function(r2){ saveDrawer._retried=false; return r2; });
         }).then(function(r2){
           if (r2.error){ toast("No se pudo guardar: "+r2.error.message); return; }
+          if (state.activeStage!=="todas") state.activeStage = payload.etapa_num;
           toast("Procedimiento creado."); closeDrawer(); fetchAll();
         });
       }
       saveDrawer._retried = false;
       if (res.error){ console.error(res.error); toast("No se pudo guardar: "+res.error.message); return; }
+      if (state.isNew && state.activeStage!=="todas") state.activeStage = payload.etapa_num;
       toast(state.isNew?"Procedimiento creado.":"Cambios guardados.");
       closeDrawer(); fetchAll();
     });
@@ -1042,9 +1148,13 @@
     if (!isAdmin()){ toast("Solo un administrador puede eliminar."); return; }
     if (state.isNew){ closeDrawer(); return; }
     if (!confirm("¿Eliminar este procedimiento del seguimiento?")) return;
-    runtime.supabase.from("procedimientos").delete().eq("id", state.editingId).then(function(res){
-      if (res.error){ console.error(res.error); toast("No se pudo eliminar."); return; }
-      toast("Procedimiento eliminado."); closeDrawer(); fetchAll();
+    var delId = state.editingId;
+    runtime.supabase.from("procedimientos").delete().eq("id", delId).select("id").then(function(res){
+      if (res.error){ console.error(res.error); toast("No se pudo eliminar: "+res.error.message); return; }
+      if (!res.data || !res.data.length){ toast("No se eliminó: la base de datos no lo permitió (o ya no existía). Se recargó la lista."); fetchAll(); return; }
+      state.data = state.data.filter(function(i){ return i.id!==delId; });
+      closeDrawer(); render();
+      toast("Procedimiento eliminado."); fetchAll();
     });
   }
 
@@ -1079,9 +1189,11 @@
 
   // ---------------- Data fetch / realtime / polling ----------------
   function fetchAll(){
+    var seq = (runtime.fetchSeq = (runtime.fetchSeq||0) + 1);
     runtime.supabase.from(dataSourceTable()).select("*").order("etapa_num").order("numero").then(function(res){
+      if (seq !== runtime.fetchSeq) return; // llegó una consulta más nueva: ignora esta
       if (res.error){ console.error(res.error); setStatus("error"); return; }
-      state.data = res.data || [];
+      state.data = sortProcedimientos(res.data || []);
       if (!state.data.length && isAdminOrGerencia()){ seedIfEmpty(); return; }
       setStatus("live"); render();
     });
@@ -1159,7 +1271,7 @@
   function onAuthChanged(){
     if (!runtime.session){
       runtime.profile = null;
-      teardownLiveUpdates();
+      teardownLiveUpdates(); stopNotifs();
       q("appRoot").style.display = "none";
       q("authScreen").style.display = "flex";
       return;
@@ -1170,6 +1282,7 @@
       setupLiveUpdates();
       fetchAll();
       setStatus("live");
+      startNotifs();
     });
   }
 
@@ -1249,6 +1362,245 @@
     });
   }
 
+  // ---------------- Notificaciones de procedimientos nuevos ----------------
+  var notif = { timer:null, announced:null, list:[], seen:null };
+  function fmtWhen(iso){ try { return new Date(iso).toLocaleString("es-CL",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}); } catch(e){ return ""; } }
+  function notifKey(){ return "remoras_notif_seen_" + (runtime.session ? runtime.session.user.id : "x"); }
+  function notifGetSeen(){ try { return localStorage.getItem(notifKey()); } catch(e){ return null; } }
+  function notifSetSeen(v){ try { localStorage.setItem(notifKey(), v); } catch(e){} }
+  function notifIsUnread(n){ return !notif.seen || new Date(n.creado_en) > new Date(notif.seen); }
+  function notifRenderBell(){
+    var unread = notif.list.filter(notifIsUnread).length, c = q("bellCount");
+    c.textContent = unread>9 ? "9+" : String(unread);
+    c.style.display = unread ? "flex" : "none";
+  }
+  function notifRenderPanel(){
+    var p = q("notifPanel");
+    if (!notif.list.length){ p.innerHTML = '<div class="notif-empty">Sin notificaciones.</div>'; return; }
+    p.innerHTML = notif.list.map(function(n){
+      return '<div class="notif-item'+(notifIsUnread(n)?" unread":"")+'" data-pid="'+escapeHtml(n.procedimiento_id||"")+'"><b>Nuevo procedimiento</b><div>'+escapeHtml(n.titulo)+'</div><small>'+fmtWhen(n.creado_en)+'</small></div>';
+    }).join("");
+    Array.prototype.forEach.call(p.querySelectorAll(".notif-item"), function(el){
+      el.addEventListener("click", function(){
+        var id = el.getAttribute("data-pid"); p.classList.remove("open");
+        if (id && state.data.some(function(i){ return i.id===id; })) openDrawer(id);
+      });
+    });
+  }
+  function notifAnnounce(n){
+    toast("Nuevo procedimiento: " + n.titulo);
+    try { if ("Notification" in window && Notification.permission === "granted") new Notification("Nuevo procedimiento en la bitácora", { body:n.titulo }); } catch(e){}
+  }
+  function fetchNotifs(){
+    if (!runtime.session || !runtime.profile) return;
+    runtime.supabase.from("notificaciones").select("*").order("creado_en",{ascending:false}).limit(30).then(function(res){
+      if (res.error || !runtime.session) return; // en silencio si aún no se ejecutó 05_novedades.sql
+      var me = runtime.session.user.id;
+      notif.list = (res.data||[]).filter(function(n){ return n.creado_por !== me; });
+      if (!notif.seen){
+        notif.seen = notifGetSeen();
+        if (!notif.seen){ notif.seen = notif.list.length ? notif.list[0].creado_en : "1970-01-01T00:00:00Z"; notifSetSeen(notif.seen); }
+      }
+      var fresh = notif.list.filter(notifIsUnread);
+      if (notif.announced === null){
+        notif.announced = {};
+        fresh.forEach(function(n){ notif.announced[n.id] = true; });
+        if (fresh.length) toast(fresh.length===1 ? ("Nuevo procedimiento: " + fresh[0].titulo) : ("Tienes " + fresh.length + " procedimientos nuevos."));
+      } else {
+        fresh.forEach(function(n){ if (!notif.announced[n.id]){ notif.announced[n.id] = true; notifAnnounce(n); } });
+      }
+      notifRenderBell();
+      if (q("notifPanel").classList.contains("open")) notifRenderPanel();
+    });
+  }
+  function toggleNotifPanel(e){
+    e.stopPropagation();
+    var p = q("notifPanel");
+    if (p.classList.contains("open")){ p.classList.remove("open"); return; }
+    try { if ("Notification" in window && Notification.permission === "default") Notification.requestPermission(); } catch(err){}
+    notifRenderPanel(); p.classList.add("open");
+    if (notif.list.length){ notif.seen = notif.list[0].creado_en; notifSetSeen(notif.seen); }
+    notifRenderBell();
+  }
+  function startNotifs(){
+    if (notif.timer) return;
+    fetchNotifs();
+    notif.timer = setInterval(fetchNotifs, 15000);
+  }
+  function stopNotifs(){
+    if (notif.timer){ clearInterval(notif.timer); notif.timer = null; }
+    notif.list = []; notif.announced = null; notif.seen = null;
+    if (q("bellCount")) q("bellCount").style.display = "none";
+    if (q("notifPanel")) q("notifPanel").classList.remove("open");
+  }
+
+  // ---------------- Carta Gantt (Excel visible en la página) ----------------
+  var GANTT_BUCKET = "gantt";
+  var XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+  var gantt = { wb:null, sheets:[], sheet:0, blob:null };
+  function canSeeGantt(){ return isAdminOrGerencia() || isOperaciones(); }
+
+  function loadExcelJS(){
+    if (window.ExcelJS) return Promise.resolve();
+    return new Promise(function(resolve, reject){
+      var sc = document.createElement("script");
+      sc.src = "https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js";
+      sc.onload = resolve;
+      sc.onerror = function(){ reject(new Error("No se pudo cargar el visor de Excel")); };
+      document.head.appendChild(sc);
+    });
+  }
+  function ganttLatestFile(){
+    return runtime.supabase.storage.from(GANTT_BUCKET).list("", { limit:100 }).then(function(res){
+      if (res.error) throw res.error;
+      var files = (res.data||[]).filter(function(f){ return /^carta-\d+\.xlsx$/.test(f.name); });
+      files.sort(function(a,b){ return a.name < b.name ? 1 : -1; });
+      return files[0] || null;
+    });
+  }
+  function openGantt(){
+    q("ganttModal").classList.add("open");
+    q("ganttUpload").style.display = isAdmin() ? "" : "none";
+    loadGantt();
+  }
+  function closeGantt(){ q("ganttModal").classList.remove("open"); }
+
+  function loadGantt(){
+    q("ganttInfo").textContent = "Cargando…"; q("ganttView").innerHTML = ""; q("ganttTabs").innerHTML = ""; q("ganttDownload").style.display = "none";
+    var bucket = runtime.supabase.storage.from(GANTT_BUCKET);
+    return ganttLatestFile().then(function(f){
+      if (!f){
+        q("ganttInfo").textContent = isAdmin() ? "Aún no hay Carta Gantt. Sube tu Excel (.xlsx) con el botón de la derecha." : "Todavía no hay una Carta Gantt publicada.";
+        return null;
+      }
+      q("ganttInfo").textContent = "Actualizada: " + fmtWhen(f.created_at || f.updated_at);
+      return bucket.download(f.name).then(function(r){ if (r.error) throw r.error; return r.data; });
+    }).then(function(blob){
+      if (!blob) return;
+      gantt.blob = blob; q("ganttDownload").style.display = "";
+      return loadExcelJS().then(function(){ return blob.arrayBuffer(); }).then(function(buf){
+        var wb = new ExcelJS.Workbook();
+        return wb.xlsx.load(buf).then(function(){ return wb; });
+      }).then(function(wb){ gantt.wb = wb; gantt.sheet = 0; renderGanttTabs(); renderGanttSheet(); });
+    }).catch(function(err){
+      q("ganttView").innerHTML = '<div class="empty-state">No se pudo mostrar el Excel aquí ('+escapeHtml(err && err.message ? err.message : err)+'). Prueba con «Descargar Excel».</div>';
+    });
+  }
+  function ganttUploadFile(file){
+    if (!file) return;
+    if (!/\.xlsx$/i.test(file.name)){ toast("Sube un archivo Excel en formato .xlsx"); return; }
+    if (file.size > 15*1024*1024){ toast("El archivo pesa más de 15MB."); return; }
+    toast("Subiendo Carta Gantt…");
+    var bucket = runtime.supabase.storage.from(GANTT_BUCKET), path = "carta-" + Date.now() + ".xlsx";
+    bucket.upload(path, file, { contentType:XLSX_MIME, cacheControl:"0" }).then(function(up){
+      if (up.error){ toast("No se pudo subir: " + up.error.message); return; }
+      return bucket.list("", { limit:100 }).then(function(l){
+        var old = (l.data||[]).map(function(f){ return f.name; }).filter(function(n){ return n !== path && /^carta-\d+\.xlsx$/.test(n); });
+        if (old.length) bucket.remove(old);
+      }).then(function(){ toast("Carta Gantt actualizada."); return loadGantt(); });
+    });
+  }
+  function ganttDownload(){
+    if (!gantt.blob) return;
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(gantt.blob); a.download = "Carta-Gantt-REMORAS.xlsx";
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  }
+
+  var THEME_COLORS = ["FFFFFF","000000","E7E6E6","44546A","4472C4","ED7D31","A5A5A5","FFC000","5B9BD5","70AD47"];
+  function tintHex(hex, tint){
+    var c = [0,2,4].map(function(i){ return parseInt(hex.substr(i,2),16); });
+    c = c.map(function(v){ v = Math.round(tint>0 ? v+(255-v)*tint : v*(1+tint)); return ("0"+Math.max(0,Math.min(255,v)).toString(16)).slice(-2); });
+    return "#" + c.join("");
+  }
+  function xlColor(c){
+    if (!c) return null;
+    if (c.argb) return "#" + String(c.argb).slice(-6);
+    if (c.theme !== undefined && THEME_COLORS[c.theme]) return tintHex(THEME_COLORS[c.theme], c.tint||0);
+    return null;
+  }
+  function a1(ref){
+    var m = /^([A-Z]+)(\d+)$/.exec(ref), c = 0;
+    for (var i=0;i<m[1].length;i++) c = c*26 + (m[1].charCodeAt(i)-64);
+    return { c:c, r:parseInt(m[2],10) };
+  }
+  function pad2(n){ return ("0"+n).slice(-2); }
+  function xlDate(d){ return pad2(d.getUTCDate())+"-"+pad2(d.getUTCMonth()+1)+"-"+d.getUTCFullYear(); }
+  function xlNumber(v, fmt){
+    if (fmt && String(fmt).indexOf("%") !== -1) return (Math.round(v*1000)/10) + "%";
+    return String(Math.round(v*100)/100);
+  }
+  function xlCellText(cell){
+    var v = cell.value, fmt = cell.numFmt;
+    if (v === null || v === undefined) return "";
+    if (v instanceof Date) return xlDate(v);
+    if (typeof v === "number") return xlNumber(v, fmt);
+    if (typeof v === "object"){
+      if (v.richText) return v.richText.map(function(r){ return r.text; }).join("");
+      if (v.formula !== undefined || v.sharedFormula !== undefined){
+        var r = v.result;
+        if (r === undefined || r === null) return "";
+        if (r instanceof Date) return xlDate(r);
+        if (typeof r === "number") return xlNumber(r, fmt);
+        if (typeof r === "object") return r.richText ? r.richText.map(function(x){ return x.text; }).join("") : "";
+        return String(r);
+      }
+      if (v.text !== undefined) return typeof v.text === "object" && v.text.richText ? v.text.richText.map(function(x){ return x.text; }).join("") : String(v.text);
+      return "";
+    }
+    return String(v);
+  }
+  function renderGanttTabs(){
+    gantt.sheets = gantt.wb.worksheets.filter(function(w){ return w.state !== "hidden" && w.state !== "veryHidden"; });
+    q("ganttTabs").innerHTML = gantt.sheets.length > 1 ? gantt.sheets.map(function(w,i){
+      return '<button type="button" class="gtab'+(i===gantt.sheet?" active":"")+'" data-i="'+i+'">'+escapeHtml(w.name)+'</button>';
+    }).join("") : "";
+    Array.prototype.forEach.call(q("ganttTabs").querySelectorAll(".gtab"), function(b){
+      b.addEventListener("click", function(){ gantt.sheet = parseInt(b.getAttribute("data-i"),10); renderGanttTabs(); renderGanttSheet(); });
+    });
+  }
+  function renderGanttSheet(){
+    var ws = gantt.sheets[gantt.sheet];
+    if (!ws){ q("ganttView").innerHTML = '<div class="empty-state">El Excel no tiene hojas visibles.</div>'; return; }
+    var maxR = Math.min(ws.rowCount||0, 800), maxC = Math.min(ws.columnCount||0, 150);
+    var skip = {}, span = {};
+    ((ws.model && ws.model.merges) || []).forEach(function(m){
+      var p = m.split(":"), st = a1(p[0]), en = a1(p[1]||p[0]);
+      span[st.r+","+st.c] = { rs:en.r-st.r+1, cs:en.c-st.c+1 };
+      for (var rr=st.r; rr<=en.r; rr++) for (var cc=st.c; cc<=en.c; cc++) if (rr!==st.r || cc!==st.c) skip[rr+","+cc] = true;
+    });
+    var widths = [], total = 0, cols = "", c, r;
+    for (c=1; c<=maxC; c++){
+      var col = ws.getColumn(c), w = col.hidden ? 0 : Math.round((col.width||9)*7+5);
+      widths[c] = w; total += w; if (w) cols += '<col style="width:'+w+'px">';
+    }
+    var rowsHtml = "";
+    for (r=1; r<=maxR; r++){
+      var row = ws.getRow(r); if (row.hidden) continue;
+      var h = row.height ? Math.round(row.height*1.333) : 20, tds = "";
+      for (c=1; c<=maxC; c++){
+        if (!widths[c] || skip[r+","+c]) continue;
+        var cell = row.getCell(c), st = [], sp = span[r+","+c], attrs = "";
+        var fl = cell.fill;
+        if (fl && fl.type === "pattern" && fl.pattern === "solid"){ var bg = xlColor(fl.fgColor); if (bg) st.push("background:"+bg); }
+        var f = cell.font || {}, fc = xlColor(f.color);
+        if (fc) st.push("color:"+fc);
+        if (f.bold) st.push("font-weight:700");
+        if (f.italic) st.push("font-style:italic");
+        if (f.size) st.push("font-size:"+Math.max(9,Math.min(20,Math.round(f.size*1.1)))+"px");
+        var al = cell.alignment || {};
+        if (/^(left|center|right)$/.test(al.horizontal||"")) st.push("text-align:"+al.horizontal);
+        if (al.vertical) st.push("vertical-align:"+(al.vertical==="center"?"middle":al.vertical));
+        if (al.wrapText) st.push("white-space:pre-wrap");
+        if (sp){ if (sp.rs>1) attrs += ' rowspan="'+sp.rs+'"'; if (sp.cs>1) attrs += ' colspan="'+sp.cs+'"'; }
+        tds += '<td'+attrs+(st.length?' style="'+st.join(";")+'"':"")+'>'+escapeHtml(xlCellText(cell))+'</td>';
+      }
+      rowsHtml += '<tr style="height:'+h+'px">'+tds+'</tr>';
+    }
+    q("ganttView").innerHTML = '<table class="gx" style="width:'+total+'px"><colgroup>'+cols+'</colgroup><tbody>'+rowsHtml+'</tbody></table>';
+  }
+
   // ---------------- Init ----------------
   function init(){
     els.content=q("content"); els.stageTabs=q("stageTabs"); els.overlay=q("overlay"); els.drawer=q("drawer"); els.toast=q("toast");
@@ -1263,6 +1615,13 @@
     q("estadoFilter").addEventListener("change", function(e){ state.estado=e.target.value; render(); });
     q("authForm").addEventListener("submit", doLogin);
     q("btnLogout").addEventListener("click", doLogout);
+    q("btnBell").addEventListener("click", toggleNotifPanel);
+    document.addEventListener("click", function(e){ var np=q("notifPanel"); if (np && np.classList.contains("open") && !np.contains(e.target)) np.classList.remove("open"); });
+    q("btnGantt").addEventListener("click", openGantt);
+    q("ganttClose").addEventListener("click", closeGantt);
+    q("ganttUpload").addEventListener("click", function(){ q("ganttFile").click(); });
+    q("ganttFile").addEventListener("change", function(e){ var gf=e.target.files[0]; e.target.value=""; ganttUploadFile(gf); });
+    q("ganttDownload").addEventListener("click", ganttDownload);
     q("btnAvatar").addEventListener("click", function(){ q("avatarFile").click(); });
     q("avatarFile").addEventListener("change", function(e){
       var f = e.target.files[0]; e.target.value = "";
