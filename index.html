@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>REMORAS — Bitácora de Procedimientos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+  :root{
+    --navy:#193256; --navy-deep:#0F2140; --blue:#004B8D; --sky:#4690CE; --sky-pale:#E8F1FA;
+    --bg:#F2F5F9; --card:#FFFFFF; --border:#DCE3EC; --ink:#16233A; --ink-soft:#5B6B84;
+    --green:#1E8A5B; --green-pale:#E4F3EC; --amber:#C67D22; --amber-pale:#FBEEDD;
+    --red:#B33F3F; --red-pale:#F8E7E7; --grey:#8A96A3; --grey-pale:#EBEEF2;
+    --purple:#6E5B9E; --purple-pale:#EFEAF7;
+    --orange:#C67D22; --orange-pale:#FBEEDD;
+    --radius:10px; --font-head:'IBM Plex Sans',sans-serif; --font-mono:'IBM Plex Mono',monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--bg);color:var(--ink);font-family:var(--font-head);-webkit-font-smoothing:antialiased;}
+  a{color:var(--blue);}
+
+  .topbar{background:linear-gradient(180deg,var(--navy) 0%, var(--navy-deep) 100%);color:#fff;padding:22px 28px 20px;position:sticky;top:0;z-index:40;box-shadow:0 2px 14px rgba(15,33,64,.25);}
+  .topbar-inner{max-width:1320px;margin:0 auto;display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;}
+  .brandline{display:flex;flex-direction:column;gap:4px;}
+  .topbar-wordmark{font-family:var(--font-mono);font-size:13px;letter-spacing:.24em;font-weight:700;color:#fff;}
+  .brandline .mark{font-family:var(--font-mono);font-size:12px;letter-spacing:.14em;color:var(--sky);font-weight:600;display:flex;align-items:center;gap:8px;}
+  .brandline h1{margin:0;font-size:26px;font-weight:700;line-height:1.15;}
+  .brandline p{margin:0;color:#B8C6DA;font-size:13.5px;max-width:560px;}
+  .top-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+  .status-dot{width:8px;height:8px;border-radius:50%;background:var(--grey);display:inline-block;}
+  .status-dot.live{background:#3FCE84;box-shadow:0 0 0 3px rgba(63,206,132,.25);}
+  .status-dot.readonly{background:var(--amber);}
+  .status-label{color:#B8C6DA;font-weight:500;}
+  .avatar{width:28px;height:28px;border-radius:50%;background:var(--blue);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;letter-spacing:.02em;overflow:hidden;flex-shrink:0;vertical-align:middle;}
+  .avatar img{width:100%;height:100%;object-fit:cover;display:block;}
+  .avatar.sm{width:20px;height:20px;font-size:9px;}
+  .avatar.lg{width:36px;height:36px;font-size:13px;}
+  .avatar-btn{background:none;border:2px solid rgba(255,255,255,.35);border-radius:50%;padding:0;cursor:pointer;display:inline-flex;position:relative;transition:border-color .15s;}
+  .avatar-btn:hover{border-color:var(--sky);}
+  .avatar-btn .avatar{width:36px;height:36px;font-size:13px;}
+  .avatar-edit{cursor:pointer;border:2px solid transparent;padding:0;background:none;border-radius:50%;}
+  .avatar-edit:hover{border-color:var(--sky);}
+  .who-wrap{display:inline-flex;align-items:center;gap:6px;}
+  .role-pill{font-family:var(--font-mono);font-size:11px;background:rgba(255,255,255,.12);color:#fff;padding:2px 8px;border-radius:999px;}
+
+  .btn{font-family:var(--font-head);border:1px solid transparent;border-radius:8px;padding:9px 16px;font-size:13.5px;font-weight:600;cursor:pointer;}
+  .btn:active{transform:translateY(1px);}
+  .btn:disabled{opacity:.5;cursor:not-allowed;}
+  .btn-primary{background:var(--sky);color:var(--navy-deep);}
+  .btn-ghost{background:rgba(255,255,255,.08);color:#fff;border-color:rgba(255,255,255,.25);}
+  .btn-ghost:hover{background:rgba(255,255,255,.16);}
+  .btn-outline{background:#fff;color:var(--blue);border-color:var(--border);}
+  .btn-danger{background:var(--red-pale);color:var(--red);}
+  .btn-sm{padding:5px 10px;font-size:12px;border-radius:6px;}
+
+  .banner{max-width:1320px;margin:14px auto 0;padding:0 28px;}
+  .banner-inner{background:var(--amber-pale);border:1px solid #ecd2ab;color:#7a5215;border-radius:8px;padding:10px 14px;font-size:12.5px;}
+
+  .kpi-wrap{max-width:1320px;margin:0 auto;padding:18px 28px 0;}
+  .kpi-strip{display:grid;grid-template-columns:1.5fr repeat(4,1fr) 1.6fr;gap:1px;background:var(--border);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+  .kpi{background:var(--card);padding:14px 18px;}
+  .kpi .num{font-family:var(--font-mono);font-size:26px;font-weight:600;line-height:1;}
+  .kpi .lbl{font-size:11.5px;color:var(--ink-soft);margin-top:5px;}
+  .kpi.total .num{color:var(--navy);} .kpi.finalizados .num{color:var(--green);}
+  .kpi.proceso .num{color:var(--amber);} .kpi.pendientes .num{color:var(--grey);} .kpi.validados .num{color:var(--blue);}
+  .kpi.progreso{display:flex;flex-direction:column;justify-content:center;gap:6px;}
+  .kpi.progreso .toprow{display:flex;justify-content:space-between;align-items:baseline;}
+  .kpi.progreso .num{font-size:20px;color:var(--navy);}
+  .global-bar{height:8px;border-radius:5px;background:var(--grey-pale);overflow:hidden;}
+  .global-bar-fill{height:100%;background:linear-gradient(90deg,var(--sky),var(--blue));border-radius:5px;transition:width .4s ease;}
+
+  .filter-wrap{max-width:1320px;margin:0 auto;padding:16px 28px 0;display:flex;flex-wrap:wrap;gap:10px;align-items:center;}
+  .stage-tabs{display:flex;gap:6px;flex-wrap:wrap;}
+  .tab{font-family:var(--font-mono);font-size:12.5px;padding:7px 13px;border-radius:999px;border:1px solid var(--border);background:#fff;color:var(--ink-soft);cursor:pointer;white-space:nowrap;}
+  .tab.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .filter-right{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap;}
+  .search-input, .select-input{font-family:var(--font-head);font-size:13px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:#fff;color:var(--ink);}
+  .search-input{width:220px;}
+
+  .legend{max-width:1320px;margin:12px auto 0;padding:0 28px;display:flex;gap:16px;flex-wrap:wrap;font-size:11.5px;color:var(--ink-soft);}
+  .legend span{display:inline-flex;align-items:center;gap:5px;}
+  .legend i{width:9px;height:9px;border-radius:50%;display:inline-block;}
+
+  .content{max-width:1320px;margin:0 auto;padding:20px 28px 80px;}
+  .stage-section{margin-bottom:30px;}
+  .stage-head{display:flex;align-items:baseline;gap:12px;border-bottom:2px solid var(--navy);padding-bottom:8px;margin-bottom:14px;flex-wrap:wrap;}
+  .stage-head .stage-num{font-family:var(--font-mono);font-weight:700;font-size:14px;background:var(--navy);color:#fff;border-radius:6px;padding:3px 9px;}
+  .stage-head h2{font-size:17px;margin:0;color:var(--navy);}
+  .stage-head .stage-desc{font-size:13px;color:var(--ink-soft);}
+  .stage-head .stage-count{margin-left:auto;font-family:var(--font-mono);font-size:12px;color:var(--ink-soft);}
+
+  .cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;}
+  .card{background:var(--card);border:1px solid var(--border);border-left:4px solid var(--grey);border-radius:var(--radius);padding:12px 14px;cursor:pointer;display:flex;flex-direction:column;gap:10px;}
+  .card:hover{border-color:var(--sky);box-shadow:0 4px 16px rgba(25,50,86,.09);}
+  .card.etapa-produccion{border-left-color:var(--purple);}
+  .card.etapa-prevencion{border-left-color:var(--orange);}
+  .card.etapa-operaciones{border-left-color:var(--sky);}
+  .card.etapa-finalizado{border-left-color:var(--green);}
+
+  .card-thumb{position:relative;width:100%;aspect-ratio:16/9;border-radius:8px;overflow:hidden;background:linear-gradient(135deg,var(--sky-pale),var(--grey-pale));display:flex;align-items:center;justify-content:center;}
+  .card-thumb img{width:100%;height:100%;object-fit:cover;display:block;}
+  .card-thumb .thumb-code{position:absolute;bottom:6px;right:6px;background:rgba(15,33,64,.75);color:#fff;font-family:var(--font-mono);font-size:10.5px;padding:2px 6px;border-radius:4px;}
+  .etapa-badge{position:absolute;top:6px;left:6px;font-size:10px;font-weight:700;padding:2px 7px;border-radius:999px;letter-spacing:.03em;}
+  .etapa-badge.produccion{background:var(--purple-pale);color:var(--purple);}
+  .etapa-badge.prevencion{background:var(--orange-pale);color:var(--orange);}
+  .etapa-badge.operaciones{background:var(--sky-pale);color:var(--blue);}
+  .etapa-badge.finalizado{background:var(--green-pale);color:var(--green);}
+
+  .card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+  .card-code{font-family:var(--font-mono);font-size:11.5px;color:var(--blue);font-weight:600;background:var(--sky-pale);padding:2px 7px;border-radius:5px;}
+  .card-title{font-size:14.5px;font-weight:600;line-height:1.3;}
+  .card-variant{font-size:12.5px;color:var(--ink-soft);margin-top:-6px;}
+  .card-meta{font-size:11.5px;color:var(--ink-soft);display:flex;gap:10px;flex-wrap:wrap;font-family:var(--font-mono);}
+  .progress-track{display:flex;gap:3px;}
+  .seg{flex:1;height:6px;border-radius:3px;background:var(--grey-pale);}
+  .seg.done{background:var(--green);} .seg.warn{background:var(--red);}
+  .progress-foot{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-soft);}
+  .progress-foot b{color:var(--navy);font-family:var(--font-mono);}
+  .empty-state{padding:50px 20px;text-align:center;color:var(--ink-soft);border:1px dashed var(--border);border-radius:var(--radius);background:#fff;}
+
+  .overlay{position:fixed;inset:0;background:rgba(15,33,64,.42);display:none;z-index:50;}
+  .overlay.open{display:block;}
+  .drawer{position:fixed;top:0;right:0;height:100%;width:min(600px,100%);background:#fff;z-index:51;transform:translateX(100%);transition:transform .22s ease;display:flex;flex-direction:column;box-shadow:-8px 0 30px rgba(15,33,64,.25);}
+  .drawer.open{transform:translateX(0);}
+  .drawer-head{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;gap:10px;background:var(--navy);color:#fff;}
+  .drawer-head .code{font-family:var(--font-mono);color:var(--sky);font-size:12px;font-weight:600;}
+  .drawer-head h3{margin:4px 0 0;font-size:16px;}
+  .drawer-close{background:transparent;border:none;color:#fff;font-size:20px;cursor:pointer;}
+  .drawer-body{padding:18px 22px;overflow-y:auto;flex:1;}
+  .drawer-foot{padding:14px 22px;border-top:1px solid var(--border);display:flex;justify-content:space-between;gap:10px;}
+  .readonly-note{background:var(--sky-pale);color:var(--blue);border-radius:7px;padding:8px 10px;font-size:12px;margin-bottom:16px;}
+
+  .field-group{margin-bottom:18px;}
+  .field-group legend{font-family:var(--font-mono);font-size:11.5px;letter-spacing:.06em;color:var(--blue);font-weight:600;margin-bottom:8px;border-bottom:1px solid var(--sky-pale);padding-bottom:4px;}
+  .field-group.area-panel{border-left:4px solid var(--grey);background:var(--grey-pale);border-radius:8px;padding:12px 14px;margin-bottom:14px;}
+  .field-group.area-panel.prevencion{border-left-color:var(--orange);background:var(--orange-pale);}
+  .field-group.area-panel.operaciones{border-left-color:var(--sky);background:var(--sky-pale);}
+  .field-group.area-panel legend{border-bottom:none;padding-bottom:0;margin-bottom:10px;}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px;}
+  .field-row.single{grid-template-columns:1fr;}
+  .field{display:flex;flex-direction:column;gap:4px;}
+  .field label{font-size:11.5px;color:var(--ink-soft);}
+  .field input[type=text], .field input[type=date], .field select, .field textarea{font-family:var(--font-head);font-size:13px;padding:7px 9px;border:1px solid var(--border);border-radius:7px;background:#fbfcfd;color:var(--ink);}
+  .field textarea{resize:vertical;min-height:44px;}
+  .field input:disabled, .field select:disabled, .field textarea:disabled{background:var(--grey-pale);color:var(--ink-soft);}
+  .readonly-value{font-size:13px;padding:7px 2px;color:var(--ink);}
+
+  .history-list{display:flex;flex-direction:column;gap:8px;margin:10px 0;max-height:220px;overflow-y:auto;}
+  .history-item{background:#fff;border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-size:12.5px;}
+  .history-item .who{font-weight:600;color:var(--navy);}
+  .history-item .when{color:var(--ink-soft);font-family:var(--font-mono);font-size:10.5px;float:right;}
+  .history-item .txt{margin-top:4px;color:var(--ink);white-space:pre-wrap;}
+  .history-empty{font-size:12px;color:var(--ink-soft);font-style:italic;}
+  .history-item-head{display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+  .obs-badge{font-size:10px;font-weight:700;letter-spacing:.03em;padding:2px 7px;border-radius:999px;text-transform:uppercase;}
+  .obs-badge.pend{background:var(--amber-pale);color:var(--amber);}
+  .obs-badge.ok{background:var(--green-pale);color:var(--green);}
+  .history-item-foot{margin-top:7px;}
+  .obs-toggle-btn{font-family:var(--font-head);font-size:11px;font-weight:600;background:#fff;border:1px solid var(--border);border-radius:6px;padding:4px 9px;cursor:pointer;color:var(--blue);}
+  .obs-toggle-btn:hover{background:var(--sky-pale);}
+
+  .legacy-toggle{font-size:12px;color:var(--blue);cursor:pointer;background:none;border:none;padding:0;text-decoration:underline;}
+  .legacy-box{margin-top:8px;font-size:12px;color:var(--ink-soft);background:var(--grey-pale);border-radius:7px;padding:10px;display:none;}
+  .legacy-box.open{display:block;}
+  .legacy-box div{margin-bottom:4px;}
+
+  .video-tabs{display:flex;gap:6px;margin-bottom:10px;}
+  .video-tab{font-size:12px;padding:6px 12px;border-radius:999px;border:1px solid var(--border);background:#fff;cursor:pointer;color:var(--ink-soft);}
+  .video-tab.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+  .video-embed{width:100%;aspect-ratio:16/9;border-radius:8px;overflow:hidden;background:#000;margin-bottom:8px;}
+  .video-embed iframe, .video-embed video{width:100%;height:100%;border:0;display:block;}
+  .dropzone{border:2px dashed var(--border);border-radius:8px;padding:18px 12px;text-align:center;font-size:12.5px;color:var(--ink-soft);cursor:pointer;background:#fbfcfd;}
+  .dropzone:hover{border-color:var(--sky);color:var(--blue);}
+  .dropzone.dragover{border-color:var(--sky);background:var(--sky-pale);color:var(--blue);}
+  .dropzone small{display:block;margin-top:4px;color:var(--ink-soft);font-size:11px;}
+  .upload-progress-wrap{margin-top:8px;}
+  .upload-progress-bar{height:8px;border-radius:5px;background:var(--grey-pale);overflow:hidden;}
+  .upload-progress-fill{height:100%;background:var(--sky);width:0%;transition:width .15s ease;}
+  .upload-progress-label{font-size:11.5px;color:var(--ink-soft);margin-top:4px;display:flex;justify-content:space-between;}
+
+  .thumb-preview{width:100%;aspect-ratio:16/9;border-radius:8px;overflow:hidden;background:var(--grey-pale);margin-top:8px;display:flex;align-items:center;justify-content:center;color:var(--ink-soft);font-size:12px;}
+  .thumb-preview img{width:100%;height:100%;object-fit:cover;}
+
+  .login-modal, .admin-modal{position:fixed;inset:0;background:rgba(15,33,64,.55);display:none;align-items:center;justify-content:center;z-index:60;padding:20px;}
+  .login-modal.open, .admin-modal.open{display:flex;}
+  .login-box{background:#fff;border-radius:12px;padding:24px;width:320px;display:flex;flex-direction:column;gap:12px;}
+  .login-box h3{margin:0;color:var(--navy);}
+  .login-box input{font-family:var(--font-head);font-size:13px;padding:9px 11px;border:1px solid var(--border);border-radius:7px;}
+  .login-error{color:var(--red);font-size:12px;display:none;}
+
+  .admin-box{background:#fff;border-radius:12px;padding:22px;width:min(640px,100%);max-height:85vh;overflow-y:auto;display:flex;flex-direction:column;gap:14px;}
+  .admin-box h3{margin:0;color:var(--navy);}
+  .admin-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  .admin-table th{text-align:left;font-size:11px;color:var(--ink-soft);border-bottom:1px solid var(--border);padding:6px 8px;}
+  .admin-table td{padding:7px 8px;border-bottom:1px solid var(--border);}
+  .role-tag{font-size:10.5px;padding:2px 7px;border-radius:999px;font-weight:600;}
+  .role-tag.admin{background:var(--navy);color:#fff;}
+  .role-tag.gerencia{background:var(--purple-pale);color:var(--purple);}
+  .role-tag.prevencion{background:var(--orange-pale);color:var(--orange);}
+  .role-tag.operaciones{background:var(--sky-pale);color:var(--blue);}
+  .new-user-form{display:grid;grid-template-columns:1fr 1fr;gap:8px;border-top:1px solid var(--border);padding-top:12px;}
+  .new-user-form input, .new-user-form select{font-size:12.5px;padding:7px 9px;border:1px solid var(--border);border-radius:7px;}
+
+  @media (max-width: 760px){ .kpi-strip{grid-template-columns:repeat(2,1fr);} .field-row{grid-template-columns:1fr;} .topbar-inner{flex-direction:column;align-items:flex-start;} .new-user-form{grid-template-columns:1fr;} }
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--navy-deep);color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;z-index:99;opacity:0;pointer-events:none;transition:opacity .25s ease, transform .25s ease;max-width:90vw;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(-6px);}
+
+  /* ---------------- Pantalla de bienvenida / login ---------------- */
+  .auth-screen{position:fixed;inset:0;display:flex;background:#fff;z-index:100;}
+  .auth-visual{flex:1 1 52%;position:relative;overflow:hidden;background:
+      radial-gradient(1100px 620px at 15% 8%, rgba(70,144,206,.22), transparent 60%),
+      linear-gradient(175deg, var(--navy) 0%, var(--navy-deep) 55%, #060E1C 100%);
+    color:#fff;display:flex;flex-direction:column;justify-content:space-between;padding:42px 44px;min-width:0;}
+  .auth-waves{position:absolute;left:0;right:0;bottom:0;height:46%;pointer-events:none;
+    background:
+      radial-gradient(ellipse 140% 100% at 30% 120%, rgba(70,144,206,.30), transparent 60%),
+      radial-gradient(ellipse 120% 90% at 75% 130%, rgba(25,50,86,.55), transparent 65%);
+    -webkit-mask-image:linear-gradient(180deg, transparent, #000 40%);
+            mask-image:linear-gradient(180deg, transparent, #000 40%);}
+  .auth-waves::before, .auth-waves::after{content:"";position:absolute;left:-10%;right:-10%;height:220px;border-radius:50%;
+    background:rgba(255,255,255,.035);}
+  .auth-waves::before{bottom:-120px;}
+  .auth-waves::after{bottom:-170px;background:rgba(255,255,255,.05);}
+  .auth-top{position:relative;z-index:2;}
+  .auth-mark{font-family:var(--font-mono);font-size:15px;letter-spacing:.22em;font-weight:700;color:#fff;}
+  .auth-rec{position:relative;z-index:2;display:inline-flex;align-items:center;gap:7px;align-self:flex-start;
+    font-family:var(--font-mono);font-size:11.5px;letter-spacing:.14em;color:#ffb4b4;
+    border:1px solid rgba(255,255,255,.22);border-radius:999px;padding:5px 12px 5px 10px;}
+  .auth-rec-dot{width:8px;height:8px;border-radius:50%;background:#e8514f;box-shadow:0 0 0 4px rgba(232,81,79,.22);
+    animation:auth-rec-pulse 1.8s ease-in-out infinite;}
+  @keyframes auth-rec-pulse{0%,100%{opacity:1;}50%{opacity:.35;}}
+  .auth-bottom{position:relative;z-index:2;max-width:460px;}
+  .auth-bottom h2{margin:0 0 10px;font-size:28px;font-weight:700;line-height:1.2;}
+  .auth-bottom p{margin:0;color:#B8C6DA;font-size:14px;line-height:1.55;}
+  .auth-panel{flex:1 1 48%;display:flex;align-items:center;justify-content:center;padding:40px;background:#fff;}
+  .auth-panel-inner{width:100%;max-width:360px;}
+  .auth-panel-inner h1{margin:0 0 6px;font-size:26px;font-weight:700;color:var(--ink);}
+  .auth-sub{margin:0 0 26px;color:var(--ink-soft);font-size:13.5px;}
+  .auth-panel-inner label{display:block;font-size:12.5px;font-weight:600;color:var(--ink-soft);margin:14px 0 6px;}
+  .auth-panel-inner input{width:100%;padding:11px 13px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:var(--font-head);}
+  .auth-panel-inner input:focus{outline:none;border-color:var(--sky);box-shadow:0 0 0 3px var(--sky-pale);}
+  .auth-submit{width:100%;margin-top:22px;padding:12px;font-size:14px;}
+  @media (max-width: 860px){ .auth-visual{display:none;} .auth-panel{padding:28px;} }
+</style>
+</head>
+<body>
+
+<div class="auth-screen" id="authScreen">
+  <div class="auth-visual">
+    <div class="auth-waves" aria-hidden="true"></div>
+    <div class="auth-top">
+      <span class="auth-mark">REMORAS</span>
+    </div>
+    <div class="auth-rec"><span class="auth-rec-dot"></span>REC</div>
+    <div class="auth-bottom">
+      <h2>Bitácora de Procedimientos</h2>
+      <p>Seguimiento de producción audiovisual: grabación, edición, revisión y validación por etapa, para la operación de fondeo de REMORAS.</p>
+    </div>
+  </div>
+  <div class="auth-panel">
+    <div class="auth-panel-inner">
+      <h1>Bienvenido</h1>
+      <p class="auth-sub">Ingresa con el usuario y clave que te entregó Producción.</p>
+      <form id="authForm">
+        <label for="loginEmail">Correo</label>
+        <input type="email" id="loginEmail" placeholder="tu@correo.cl" autocomplete="username" required>
+        <label for="loginPass">Contraseña</label>
+        <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password" required>
+        <div class="login-error" id="loginError">Credenciales incorrectas.</div>
+        <button type="submit" class="btn btn-primary auth-submit" id="loginSubmit">Iniciar sesión</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div id="appRoot" style="display:none;">
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brandline">
+      <span class="topbar-wordmark">REMORAS</span>
+      <span class="mark"><span class="status-dot" id="statusDot"></span><span class="status-label" id="statusLabel">Conectando…</span><span class="role-pill" id="rolePill" style="display:none;"></span></span>
+      <h1>Bitácora de Procedimientos</h1>
+      <p>Grabación → Edición → Revisión 1 → Prevención → Operaciones → Finalizado.</p>
+    </div>
+    <div class="top-actions">
+      <button class="btn btn-ghost" id="btnUsuarios" style="display:none;">Usuarios</button>
+      <button class="btn btn-primary" id="btnNew" style="display:none;">+ Nuevo procedimiento</button>
+      <button class="avatar-btn" id="btnAvatar" type="button" title="Cambiar mi foto de perfil" style="display:none;"></button>
+      <input type="file" id="avatarFile" accept="image/png,image/jpeg,image/webp" style="display:none;">
+      <button class="btn btn-ghost" id="btnLogout">Cerrar sesión</button>
+    </div>
+  </div>
+</div>
+
+<div class="banner" id="banner" style="display:none;"><div class="banner-inner" id="bannerText"></div></div>
+
+<div class="kpi-wrap" id="kpiWrap">
+  <div class="kpi-strip">
+    <div class="kpi progreso"><div class="toprow"><span class="lbl">PROGRESO GLOBAL</span><span class="num" id="kpiProgresoNum">0%</span></div><div class="global-bar"><div class="global-bar-fill" id="kpiProgresoBar" style="width:0%"></div></div></div>
+    <div class="kpi total"><div class="num" id="kpiTotal">0</div><div class="lbl">Procedimientos</div></div>
+    <div class="kpi finalizados"><div class="num" id="kpiFinalizados">0</div><div class="lbl">Grabación finalizada</div></div>
+    <div class="kpi proceso"><div class="num" id="kpiProceso">0</div><div class="lbl">En proceso</div></div>
+    <div class="kpi pendientes"><div class="num" id="kpiPendientes">0</div><div class="lbl">Pendientes</div></div>
+    <div class="kpi validados"><div class="num" id="kpiValidados">0</div><div class="lbl">Finalizados</div></div>
+  </div>
+</div>
+
+<div class="legend" id="legend">
+  <span><i style="background:var(--purple)"></i> Producción audiovisual</span>
+  <span><i style="background:var(--orange)"></i> Prevención</span>
+  <span><i style="background:var(--sky)"></i> Operaciones</span>
+  <span><i style="background:var(--green)"></i> Finalizado</span>
+</div>
+
+<div class="filter-wrap">
+  <div class="stage-tabs" id="stageTabs"></div>
+  <div class="filter-right">
+    <input class="search-input" id="searchInput" type="text" placeholder="Buscar procedimiento o código...">
+    <select class="select-input" id="estadoFilter">
+      <option value="">Todos los estados</option>
+      <option value="produccion">Producción audiovisual</option>
+      <option value="prevencion">En Prevención</option>
+      <option value="operaciones">En Operaciones</option>
+      <option value="finalizado">Finalizado</option>
+    </select>
+  </div>
+</div>
+
+<div class="content" id="content"></div>
+
+<div class="overlay" id="overlay"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-head"><div><div class="code" id="drawerCode">PRO-000</div><h3 id="drawerTitle">Procedimiento</h3></div><button class="drawer-close" id="drawerClose">&times;</button></div>
+  <div class="drawer-body" id="drawerBody"></div>
+  <div class="drawer-foot">
+    <button class="btn btn-danger" id="btnDelete">Eliminar</button>
+    <div style="display:flex;gap:8px;"><button class="btn btn-outline" id="btnCancel">Cancelar</button><button class="btn btn-primary" id="btnSave">Guardar cambios</button></div>
+  </div>
+</div>
+
+<div class="admin-modal" id="adminModal">
+  <div class="admin-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <h3>Usuarios del sistema</h3>
+      <button class="drawer-close" id="adminClose" style="color:var(--ink);">&times;</button>
+    </div>
+    <table class="admin-table" id="adminTable"><thead><tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Estado</th><th></th></tr></thead><tbody id="adminTableBody"></tbody></table>
+    <form class="new-user-form" id="newUserForm">
+      <input type="text" id="nuNombre" placeholder="Nombre" required>
+      <input type="email" id="nuEmail" placeholder="Correo" required>
+      <input type="password" id="nuPass" placeholder="Contraseña" required>
+      <select id="nuRol">
+        <option value="gerencia">Gerencia</option>
+        <option value="prevencion">Prevención</option>
+        <option value="operaciones">Operaciones</option>
+        <option value="admin">Administrador</option>
+      </select>
+      <button type="submit" class="btn btn-primary" style="grid-column:1/-1;">Crear usuario</button>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+</div><!-- /appRoot -->
+
+<script type="application/json" id="seed-data">[{"id": "PRO-001", "numero": "1", "nombre": "Recepción de materiales en terreno (Anclajes)", "modo": "Variante", "variante": "V1: Confección e instalación de los yugos", "codigo": "PRO-001", "etapa_num": "1", "etapa_titulo": "INSTALACIÓN", "etapa_desc": "Barco montando estructuras, líneas y reticulados en zona de trabajo", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Finalizado", "rev1_prev_estado": "Positivo", "rev1_prev_obs": "", "rev1_ops_estado": "Positivo", "rev1_ops_obs": "", "estado_edicion": "Finalizado", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-002", "numero": "1", "nombre": "Recepción de materiales en terreno (Anclajes)", "modo": "Variante", "variante": "V2: Confección e instalación de balizas para pesos muertos", "codigo": "PRO-002", "etapa_num": "1", "etapa_titulo": "INSTALACIÓN", "etapa_desc": "Barco montando estructuras, líneas y reticulados en zona de trabajo", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Finalizado", "rev1_prev_estado": "Positivo", "rev1_prev_obs": "", "rev1_ops_estado": "Positivo", "rev1_ops_obs": "", "estado_edicion": "Finalizado", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-003", "numero": "2", "nombre": "Maniobra para dejar sujetas las balizas de los anclajes", "modo": "Único", "variante": "", "codigo": "PRO-003", "etapa_num": "1", "etapa_titulo": "INSTALACIÓN", "etapa_desc": "Barco montando estructuras, líneas y reticulados en zona de trabajo", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Pendiente", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Pendiente", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-004", "numero": "3", "nombre": "Confección de gaza (cabo fondeo)", "modo": "Único", "variante": "", "codigo": "PRO-004", "etapa_num": "1", "etapa_titulo": "INSTALACIÓN", "etapa_desc": "Barco montando estructuras, líneas y reticulados en zona de trabajo", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Finalizado", "rev1_prev_estado": "Positivo", "rev1_prev_obs": "", "rev1_ops_estado": "Positivo", "rev1_ops_obs": "", "estado_edicion": "Finalizado", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-005", "numero": "4", "nombre": "Correcto uso del GPS", "modo": "Único", "variante": "", "codigo": "PRO-005", "etapa_num": "1", "etapa_titulo": "INSTALACIÓN", "etapa_desc": "Barco montando estructuras, líneas y reticulados en zona de trabajo", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Finalizado", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Finalizado", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-006", "numero": "5", "nombre": "Cómo tomar coordenadas de posición de los artefactos", "modo": "Único", "variante": "", "codigo": "PRO-006", "etapa_num": "1", "etapa_titulo": "INSTALACIÓN", "etapa_desc": "Barco montando estructuras, líneas y reticulados en zona de trabajo", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Pendiente", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Pendiente", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-007", "numero": "6", "nombre": "Maniobra de instalación de líneas con GPS (sin artefacto instalado)", "modo": "Variante", "variante": "V1: Línea con ancla", "codigo": "PRO-007", "etapa_num": "1", "etapa_titulo": "INSTALACIÓN", "etapa_desc": "Barco montando estructuras, líneas y reticulados en zona de trabajo", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Finalizado", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Finalizado", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-008", "numero": "6", "nombre": "Maniobra de instalación de líneas con GPS (sin artefacto instalado)", "modo": "Variante", "variante": "V2: Línea con peso muerto", "codigo": "PRO-008", "etapa_num": "1", "etapa_titulo": "INSTALACIÓN", "etapa_desc": "Barco montando estructuras, líneas y reticulados en zona de trabajo", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Finalizado", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Finalizado", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-009", "numero": "6", "nombre": "Maniobra de instalación de líneas con GPS (sin artefacto instalado)", "modo": "Variante", "variante": "V3: Línea con ancla/muerto", "codigo": "PRO-009", "etapa_num": "1", "etapa_titulo": "INSTALACIÓN", "etapa_desc": "Barco montando estructuras, líneas y reticulados en zona de trabajo", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Pendiente", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Pendiente", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-010", "numero": "7", "nombre": "Confección de reticulado", "modo": "Variante", "variante": "V1: Módulo", "codigo": "PRO-010", "etapa_num": "1", "etapa_titulo": "INSTALACIÓN", "etapa_desc": "Barco montando estructuras, líneas y reticulados en zona de trabajo", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Pendiente", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Pendiente", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-011", "numero": "7", "nombre": "Confección de reticulado", "modo": "Variante", "variante": "V2: Pontón", "codigo": "PRO-011", "etapa_num": "1", "etapa_titulo": "INSTALACIÓN", "etapa_desc": "Barco montando estructuras, líneas y reticulados en zona de trabajo", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Pendiente", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Pendiente", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-012", "numero": "7", "nombre": "Confección de reticulado", "modo": "Variante", "variante": "V3: Plataformas", "codigo": "PRO-012", "etapa_num": "1", "etapa_titulo": "INSTALACIÓN", "etapa_desc": "Barco montando estructuras, líneas y reticulados en zona de trabajo", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Pendiente", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Pendiente", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-013", "numero": "8", "nombre": "Instalación de reticulados (sin buceo)", "modo": "Variante", "variante": "V1: Módulo (con cabo)", "codigo": "PRO-013", "etapa_num": "1", "etapa_titulo": "INSTALACIÓN", "etapa_desc": "Barco montando estructuras, líneas y reticulados en zona de trabajo", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Pendiente", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Pendiente", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-014", "numero": "8", "nombre": "Instalación de reticulados (sin buceo)", "modo": "Variante", "variante": "V2: Pontón (sacando cadenas 32mm)", "codigo": "PRO-014", "etapa_num": "1", "etapa_titulo": "INSTALACIÓN", "etapa_desc": "Barco montando estructuras, líneas y reticulados en zona de trabajo", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Pendiente", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Pendiente", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-015", "numero": "8", "nombre": "Instalación de reticulados (sin buceo)", "modo": "Variante", "variante": "V2b: Pontón (dejando cadenas 32mm)", "codigo": "PRO-015", "etapa_num": "1", "etapa_titulo": "INSTALACIÓN", "etapa_desc": "Barco montando estructuras, líneas y reticulados en zona de trabajo", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Pendiente", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Pendiente", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-016", "numero": "8", "nombre": "Instalación de reticulados (sin buceo)", "modo": "Variante", "variante": "V3: Plataformas (sacando cadenas 32mm)", "codigo": "PRO-016", "etapa_num": "1", "etapa_titulo": "INSTALACIÓN", "etapa_desc": "Barco montando estructuras, líneas y reticulados en zona de trabajo", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Pendiente", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Pendiente", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-017", "numero": "8", "nombre": "Instalación de reticulados (sin buceo)", "modo": "Variante", "variante": "V3b: Plataformas (dejando cadenas 32mm)", "codigo": "PRO-017", "etapa_num": "1", "etapa_titulo": "INSTALACIÓN", "etapa_desc": "Barco montando estructuras, líneas y reticulados en zona de trabajo", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Pendiente", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Pendiente", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-018", "numero": "9", "nombre": "Conexión y desconexión de línea (sin buceo)", "modo": "Único", "variante": "", "codigo": "PRO-018", "etapa_num": "1", "etapa_titulo": "INSTALACIÓN", "etapa_desc": "Barco montando estructuras, líneas y reticulados en zona de trabajo", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Finalizado", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "En Proceso", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "CAMBIAR 2 ESCENAS", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-019", "numero": "10", "nombre": "Instalación de reventadores (sin buceo)", "modo": "Variante", "variante": "V1: Solo con cabo", "codigo": "PRO-019", "etapa_num": "1", "etapa_titulo": "INSTALACIÓN", "etapa_desc": "Barco montando estructuras, líneas y reticulados en zona de trabajo", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Finalizado", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "En Proceso", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "Falta narración para finalizar.", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-020", "numero": "10", "nombre": "Instalación de reventadores (sin buceo)", "modo": "Variante", "variante": "V2: Dejando conectado el grillete por seguridad", "codigo": "PRO-020", "etapa_num": "1", "etapa_titulo": "INSTALACIÓN", "etapa_desc": "Barco montando estructuras, líneas y reticulados en zona de trabajo", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Finalizado", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "En Proceso", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "Falta narración para finalizar.", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-021", "numero": "11", "nombre": "Instalación de líneas con ancla (sin buceo)", "modo": "Único", "variante": "", "codigo": "PRO-021", "etapa_num": "1", "etapa_titulo": "INSTALACIÓN", "etapa_desc": "Barco montando estructuras, líneas y reticulados en zona de trabajo", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Finalizado", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "En Proceso", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "CAMBIAR 2 ESCENAS", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-022", "numero": "12", "nombre": "Calado de linea con peso muerto.", "modo": "Único", "variante": "", "codigo": "PRO-022", "etapa_num": "1", "etapa_titulo": "INSTALACIÓN", "etapa_desc": "Barco montando estructuras, líneas y reticulados en zona de trabajo", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Finalizado", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Finalizado", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-023", "numero": "13", "nombre": "Calado de linea con retenida a costa.", "modo": "Único", "variante": "", "codigo": "PRO-023", "etapa_num": "1", "etapa_titulo": "INSTALACIÓN", "etapa_desc": "Barco montando estructuras, líneas y reticulados en zona de trabajo", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Finalizado", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Finalizado", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-024", "numero": "14", "nombre": "Instalación de boya metalica.", "modo": "Único", "variante": "", "codigo": "PRO-024", "etapa_num": "1", "etapa_titulo": "INSTALACIÓN", "etapa_desc": "Barco montando estructuras, líneas y reticulados en zona de trabajo", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Finalizado", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Finalizado", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-025", "numero": "15", "nombre": "Enyucado de 40 ton (sin buceo)", "modo": "Único", "variante": "", "codigo": "PRO-025", "etapa_num": "1", "etapa_titulo": "INSTALACIÓN", "etapa_desc": "Barco montando estructuras, líneas y reticulados en zona de trabajo", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Finalizado", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "En Proceso", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-026", "numero": "16", "nombre": "Instalación de líneas con 40 ton (sin buceo)", "modo": "Único", "variante": "", "codigo": "PRO-026", "etapa_num": "1", "etapa_titulo": "INSTALACIÓN", "etapa_desc": "Barco montando estructuras, líneas y reticulados en zona de trabajo", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Pendiente", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Pendiente", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-027", "numero": "17", "nombre": "Confección e instalación de líneas solidarias", "modo": "Único", "variante": "", "codigo": "PRO-027", "etapa_num": "1", "etapa_titulo": "INSTALACIÓN", "etapa_desc": "Barco montando estructuras, líneas y reticulados en zona de trabajo", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Pendiente", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Pendiente", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-028", "numero": "18", "nombre": "Instalación de retenidas", "modo": "Único", "variante": "", "codigo": "PRO-028", "etapa_num": "1", "etapa_titulo": "INSTALACIÓN", "etapa_desc": "Barco montando estructuras, líneas y reticulados en zona de trabajo", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Finalizado", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Finalizado", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-029", "numero": "18", "nombre": "Perforaciones", "modo": "Único", "variante": "", "codigo": "PRO-029", "etapa_num": "1", "etapa_titulo": "INSTALACIÓN", "etapa_desc": "Barco montando estructuras, líneas y reticulados en zona de trabajo", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Finalizado", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Finalizado", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-030", "numero": "1", "nombre": "Prueba de tracción", "modo": "Único", "variante": "", "codigo": "PRO-030", "etapa_num": "2", "etapa_titulo": "PRUEBAS Y CONTROL", "etapa_desc": "Barco verificando estructuras instaladas: tracción, rastreo, inspección", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Finalizado", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Finalizado", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-031", "numero": "2", "nombre": "Rastreo de líneas y/o reticulado", "modo": "Único", "variante": "", "codigo": "PRO-031", "etapa_num": "2", "etapa_titulo": "PRUEBAS Y CONTROL", "etapa_desc": "Barco verificando estructuras instaladas: tracción, rastreo, inspección", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Pendiente", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Pendiente", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-032", "numero": "3", "nombre": "Rastreo de líneas y/o reticulado", "modo": "Único", "variante": "", "codigo": "PRO-032", "etapa_num": "2", "etapa_titulo": "PRUEBAS Y CONTROL", "etapa_desc": "Barco verificando estructuras instaladas: tracción, rastreo, inspección", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Pendiente", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Pendiente", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-033", "numero": "4", "nombre": "Inspección de artefactos — recepción/entrega a remolque", "modo": "Variante", "variante": "V1: Módulo", "codigo": "PRO-033", "etapa_num": "2", "etapa_titulo": "PRUEBAS Y CONTROL", "etapa_desc": "Barco verificando estructuras instaladas: tracción, rastreo, inspección", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Pendiente", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Pendiente", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "Se requiere hacer un manual editable", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-034", "numero": "4", "nombre": "Inspección de artefactos — recepción/entrega a remolque", "modo": "Variante", "variante": "V2: Pontón", "codigo": "PRO-034", "etapa_num": "2", "etapa_titulo": "PRUEBAS Y CONTROL", "etapa_desc": "Barco verificando estructuras instaladas: tracción, rastreo, inspección", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Pendiente", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Pendiente", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "Se requiere hacer un manual editable", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-035", "numero": "4", "nombre": "Inspección de artefactos — recepción/entrega a remolque", "modo": "Variante", "variante": "V3: Oxzo", "codigo": "PRO-035", "etapa_num": "2", "etapa_titulo": "PRUEBAS Y CONTROL", "etapa_desc": "Barco verificando estructuras instaladas: tracción, rastreo, inspección", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Pendiente", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Pendiente", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "Se requiere hacer un manual editable", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-036", "numero": "1", "nombre": "Limpieza de línea con tensores y anillo GK", "modo": "Único", "variante": "", "codigo": "PRO-036", "etapa_num": "3", "etapa_titulo": "OPERACIÓN Y MANTENIMIENTO", "etapa_desc": "Barco en operación normal: mantenimiento rutinario, cambio de equipos", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Finalizado", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "En Proceso", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-037", "numero": "2", "nombre": "Limpieza de linea sin desconexión.", "modo": "Único", "variante": "", "codigo": "PRO-037", "etapa_num": "3", "etapa_titulo": "OPERACIÓN Y MANTENIMIENTO", "etapa_desc": "Barco en operación normal: mantenimiento rutinario, cambio de equipos", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Finalizado", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "En Proceso", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-038", "numero": "3", "nombre": "Limpieza de fondeo a pendúlo", "modo": "Único", "variante": "", "codigo": "PRO-038", "etapa_num": "3", "etapa_titulo": "OPERACIÓN Y MANTENIMIENTO", "etapa_desc": "Barco en operación normal: mantenimiento rutinario, cambio de equipos", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Pendiente", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Pendiente", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-039", "numero": "4", "nombre": "Cambio de boya", "modo": "Variante", "variante": "V1: Cilíndrica", "codigo": "PRO-039", "etapa_num": "3", "etapa_titulo": "OPERACIÓN Y MANTENIMIENTO", "etapa_desc": "Barco en operación normal: mantenimiento rutinario, cambio de equipos", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Pendiente", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Pendiente", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-040", "numero": "4", "nombre": "Cambio de boya", "modo": "Variante", "variante": "V2: Esférica", "codigo": "PRO-040", "etapa_num": "3", "etapa_titulo": "OPERACIÓN Y MANTENIMIENTO", "etapa_desc": "Barco en operación normal: mantenimiento rutinario, cambio de equipos", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Pendiente", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Pendiente", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-041", "numero": "4", "nombre": "Cambio de boya", "modo": "Variante", "variante": "V3: Cónica", "codigo": "PRO-041", "etapa_num": "3", "etapa_titulo": "OPERACIÓN Y MANTENIMIENTO", "etapa_desc": "Barco en operación normal: mantenimiento rutinario, cambio de equipos", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Pendiente", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Pendiente", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-042", "numero": "4", "nombre": "Cambio de boya", "modo": "Variante", "variante": "V4: Cilíndrica doble o triple", "codigo": "PRO-042", "etapa_num": "3", "etapa_titulo": "OPERACIÓN Y MANTENIMIENTO", "etapa_desc": "Barco en operación normal: mantenimiento rutinario, cambio de equipos", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Pendiente", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Pendiente", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-043", "numero": "1", "nombre": "Recepción y aseguramiento de artefactos (sin buceo)", "modo": "Variante", "variante": "V1: Módulo", "codigo": "PRO-043", "etapa_num": "4", "etapa_titulo": "TRASLADO Y REMOLQUE", "etapa_desc": "Barco moviéndose entre locaciones: remolques, recepciones, carga", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Finalizado", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Finalizado", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-044", "numero": "1", "nombre": "Recepción y aseguramiento de artefactos (sin buceo)", "modo": "Variante", "variante": "V2: Pontón", "codigo": "PRO-044", "etapa_num": "4", "etapa_titulo": "TRASLADO Y REMOLQUE", "etapa_desc": "Barco moviéndose entre locaciones: remolques, recepciones, carga", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Finalizado", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Finalizado", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-045", "numero": "1", "nombre": "Recepción y aseguramiento de artefactos (sin buceo)", "modo": "Variante", "variante": "V3: Oxzo", "codigo": "PRO-045", "etapa_num": "4", "etapa_titulo": "TRASLADO Y REMOLQUE", "etapa_desc": "Barco moviéndose entre locaciones: remolques, recepciones, carga", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Pendiente", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Pendiente", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-046", "numero": "1", "nombre": "Recepción y aseguramiento de artefactos (sin buceo)", "modo": "Variante", "variante": "V4: Plataformas", "codigo": "PRO-046", "etapa_num": "4", "etapa_titulo": "TRASLADO Y REMOLQUE", "etapa_desc": "Barco moviéndose entre locaciones: remolques, recepciones, carga", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Pendiente", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Pendiente", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-047", "numero": "2", "nombre": "Entrega de artefacto a remolcador (sin buceo)", "modo": "Variante", "variante": "V1: Módulo", "codigo": "PRO-047", "etapa_num": "4", "etapa_titulo": "TRASLADO Y REMOLQUE", "etapa_desc": "Barco moviéndose entre locaciones: remolques, recepciones, carga", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Pendiente", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Pendiente", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "Según operaciones este procedimiento es esporádico puede que no se ejecute.", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-048", "numero": "2", "nombre": "Entrega de artefacto a remolcador (sin buceo)", "modo": "Variante", "variante": "V2: Pontón", "codigo": "PRO-048", "etapa_num": "4", "etapa_titulo": "TRASLADO Y REMOLQUE", "etapa_desc": "Barco moviéndose entre locaciones: remolques, recepciones, carga", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Pendiente", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Pendiente", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "Según operaciones este procedimiento es esporádico puede que no se ejecute.", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-049", "numero": "2", "nombre": "Entrega de artefacto a remolcador (sin buceo)", "modo": "Variante", "variante": "V3: Oxzo", "codigo": "PRO-049", "etapa_num": "4", "etapa_titulo": "TRASLADO Y REMOLQUE", "etapa_desc": "Barco moviéndose entre locaciones: remolques, recepciones, carga", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Pendiente", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Pendiente", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "Según operaciones este procedimiento es esporádico puede que no se ejecute.", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-050", "numero": "2", "nombre": "Entrega de artefacto a remolcador (sin buceo)", "modo": "Variante", "variante": "V4: Plataformas", "codigo": "PRO-050", "etapa_num": "4", "etapa_titulo": "TRASLADO Y REMOLQUE", "etapa_desc": "Barco moviéndose entre locaciones: remolques, recepciones, carga", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Pendiente", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Pendiente", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "Según operaciones este procedimiento es esporádico puede que no se ejecute.", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-051", "numero": "3", "nombre": "Remolque de artefactos", "modo": "Variante", "variante": "V1: Módulo", "codigo": "PRO-051", "etapa_num": "4", "etapa_titulo": "TRASLADO Y REMOLQUE", "etapa_desc": "Barco moviéndose entre locaciones: remolques, recepciones, carga", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Pendiente", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Pendiente", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "Según operaciones este procedimiento es esporádico puede que no se ejecute.", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-052", "numero": "3", "nombre": "Remolque de artefactos", "modo": "Variante", "variante": "V2: Pontón", "codigo": "PRO-052", "etapa_num": "4", "etapa_titulo": "TRASLADO Y REMOLQUE", "etapa_desc": "Barco moviéndose entre locaciones: remolques, recepciones, carga", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Pendiente", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Pendiente", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "Según operaciones este procedimiento es esporádico puede que no se ejecute.", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-053", "numero": "3", "nombre": "Remolque de artefactos", "modo": "Variante", "variante": "V3: Oxzo", "codigo": "PRO-053", "etapa_num": "4", "etapa_titulo": "TRASLADO Y REMOLQUE", "etapa_desc": "Barco moviéndose entre locaciones: remolques, recepciones, carga", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Pendiente", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Pendiente", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "Según operaciones este procedimiento es esporádico puede que no se ejecute.", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-054", "numero": "3", "nombre": "Remolque de artefactos", "modo": "Variante", "variante": "V4: Plataformas", "codigo": "PRO-054", "etapa_num": "4", "etapa_titulo": "TRASLADO Y REMOLQUE", "etapa_desc": "Barco moviéndose entre locaciones: remolques, recepciones, carga", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Pendiente", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Pendiente", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "Según operaciones este procedimiento es esporádico puede que no se ejecute.", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-055", "numero": "4", "nombre": "Traslado de pesos muertos (sin buceo)", "modo": "Único", "variante": "", "codigo": "PRO-055", "etapa_num": "4", "etapa_titulo": "TRASLADO Y REMOLQUE", "etapa_desc": "Barco moviéndose entre locaciones: remolques, recepciones, carga", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Pendiente", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Pendiente", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-056", "numero": "5", "nombre": "Aseguramiento de carga en cubierta", "modo": "Único", "variante": "", "codigo": "PRO-056", "etapa_num": "4", "etapa_titulo": "TRASLADO Y REMOLQUE", "etapa_desc": "Barco moviéndose entre locaciones: remolques, recepciones, carga", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Pendiente", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Pendiente", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-057", "numero": "6", "nombre": "Recepción y aseg. de boyas — Sin Buceo (I)", "modo": "Único", "variante": "", "codigo": "PRO-057", "etapa_num": "4", "etapa_titulo": "TRASLADO Y REMOLQUE", "etapa_desc": "Barco moviéndose entre locaciones: remolques, recepciones, carga", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Pendiente", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Pendiente", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-058", "numero": "1", "nombre": "Recuperación de líneas con anclas (sin buceo)", "modo": "Único", "variante": "", "codigo": "PRO-058", "etapa_num": "5", "etapa_titulo": "RECUPERACIÓN Y FINALIZACIÓN", "etapa_desc": "Barco desmontando equipos al cierre del proyecto", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Pendiente", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Pendiente", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-059", "numero": "2", "nombre": "Recuperación de líneas con peso muerto (sin buceo)", "modo": "Único", "variante": "", "codigo": "PRO-059", "etapa_num": "5", "etapa_titulo": "RECUPERACIÓN Y FINALIZACIÓN", "etapa_desc": "Barco desmontando equipos al cierre del proyecto", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Finalizado", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Finalizado", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}, {"id": "PRO-060", "numero": "3", "nombre": "RECEPCIÓN DE BOYA EN TREN", "modo": "Único", "variante": "", "codigo": "PRO-060", "etapa_num": "5", "etapa_titulo": "RECUPERACIÓN Y FINALIZACIÓN", "etapa_desc": "Barco desmontando equipos al cierre del proyecto", "centro": "", "barco": "", "fecha_grabacion": null, "estado_grabacion": "Pendiente", "rev1_prev_estado": "Pendiente", "rev1_prev_obs": "", "rev1_ops_estado": "Pendiente", "rev1_ops_obs": "", "estado_edicion": "Pendiente", "rev2_prev_encargado": "", "rev2_prev_estado": "Pendiente", "rev2_prev_obs": "", "rev2_ops_encargado": "", "rev2_ops_estado": "Pendiente", "rev2_ops_obs": "", "obs_mantencion": "", "validado": "Pendiente", "link_procedimiento": "", "imagen_portada": "", "nota_produccion": "", "revision1_estado": "Pendiente", "revision1_responsable": "", "revision1_fecha": null, "prevencion_estado": "Pendiente", "prevencion_responsable_id": null, "prevencion_fecha": null, "operaciones_estado": "Pendiente", "operaciones_responsable_id": null, "operaciones_fecha": null, "video_tipo": null, "video_youtube_url": "", "video_storage_path": "", "video_nombre_archivo": "", "video_actualizado_en": null}]</script>
+<script>
+(function(){
+  "use strict";
+
+  // ====== CONFIGURA AQUÍ TUS CREDENCIALES DE SUPABASE ======
+  var SUPABASE_URL = "https://fgcofydzuootkxqtqilm.supabase.co";
+  var SUPABASE_ANON_KEY = "sb_publishable_96tGRGpKpt1Zk_zPCj0Gtw_1COSYGvv";
+  // ===========================================================
+
+  var ROLE_LABELS = { admin:"Administrador", gerencia:"Gerencia", prevencion:"Prevención", operaciones:"Operaciones" };
+  var STEP_KEYS = ["estado_grabacion","estado_edicion","revision1_estado","prevencion_estado","operaciones_estado","validado"];
+
+  var els = {};
+  var state = { data: [], activeStage: "todas", search: "", estado: "", editingId: null, isNew: false, observaciones: {} };
+  var runtime = { supabase: null, session: null, profile: null, profilesById: {}, channel: null, pollTimer: null };
+
+  function q(id){ return document.getElementById(id); }
+  function toast(msg){ els.toast.textContent = msg; els.toast.classList.add("show"); clearTimeout(els.toast._t); els.toast._t = setTimeout(function(){ els.toast.classList.remove("show"); }, 2600); }
+  function seedData(){ return JSON.parse(q("seed-data").textContent); }
+  function escapeHtml(s){ if (s===null||s===undefined) return ""; return String(s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+  function fmtDate(iso){ if (!iso) return ""; var d = new Date(iso); if (isNaN(d)) return iso; return d.toLocaleDateString("es-CL") + " " + d.toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"}); }
+
+  // ---------------- Role helpers ----------------
+  function myRole(){ return runtime.profile ? runtime.profile.rol : null; }
+  function isAdmin(){ return myRole() === "admin"; }
+  function isGerencia(){ return myRole() === "gerencia"; }
+  function isAdminOrGerencia(){ return isAdmin() || isGerencia(); }
+  function isPrevencion(){ return myRole() === "prevencion"; }
+  function isOperaciones(){ return myRole() === "operaciones"; }
+  function hasRole(){ return !!myRole(); }
+
+  // ---------------- Fotos de perfil ----------------
+  function initialsOf(nombre){
+    var p = String(nombre||"?").trim().split(/\s+/);
+    return ((p[0]||"?").charAt(0) + (p.length>1 ? p[p.length-1].charAt(0) : "")).toUpperCase();
+  }
+  function avatarHTML(p, size){
+    var cls = "avatar" + (size ? " "+size : "");
+    if (p && p.avatar_url) return '<span class="'+cls+'"><img src="'+escapeHtml(p.avatar_url)+'" alt=""></span>';
+    return '<span class="'+cls+'">'+escapeHtml(initialsOf(p && p.nombre))+'</span>';
+  }
+  // Reduce la foto a 320x320 (recorte centrado) y la convierte a JPG liviano.
+  function resizeAvatar(file){
+    return new Promise(function(resolve, reject){
+      var url = URL.createObjectURL(file), img = new Image();
+      img.onload = function(){
+        var S = 320, c = document.createElement("canvas"); c.width = S; c.height = S;
+        var side = Math.min(img.width, img.height), sx = (img.width-side)/2, sy = (img.height-side)/2;
+        c.getContext("2d").drawImage(img, sx, sy, side, side, 0, 0, S, S);
+        URL.revokeObjectURL(url);
+        c.toBlob(function(b){ b ? resolve(b) : reject(new Error("No se pudo procesar la imagen.")); }, "image/jpeg", 0.85);
+      };
+      img.onerror = function(){ URL.revokeObjectURL(url); reject(new Error("El archivo no es una imagen válida.")); };
+      img.src = url;
+    });
+  }
+  function uploadAvatar(userId, file){
+    if (!file) return Promise.resolve();
+    if (!/^image\/(png|jpe?g|webp)$/.test(file.type)){ toast("Usa una imagen JPG, PNG o WebP."); return Promise.resolve(); }
+    if (file.size > 8*1024*1024){ toast("La imagen pesa más de 8MB."); return Promise.resolve(); }
+    toast("Subiendo foto…");
+    var bucket = runtime.supabase.storage.from("avatars"), path = userId + "/avatar-" + Date.now() + ".jpg";
+    return resizeAvatar(file).then(function(blob){
+      return bucket.upload(path, blob, { contentType:"image/jpeg", upsert:true });
+    }).then(function(up){
+      if (up.error) throw up.error;
+      var pub = bucket.getPublicUrl(path).data.publicUrl;
+      return runtime.supabase.rpc("set_avatar", { p_user:userId, p_url:pub }).then(function(r){
+        if (r.error) throw r.error;
+        // limpieza: borra fotos anteriores de esa carpeta (si falla, no importa)
+        bucket.list(userId).then(function(l){
+          var old = (l.data||[]).map(function(f){ return userId+"/"+f.name; }).filter(function(p){ return p !== path; });
+          if (old.length) bucket.remove(old);
+        });
+      });
+    }).then(function(){
+      return loadProfile().then(loadProfilesList);
+    }).then(function(){
+      setStatus("live");
+      if (q("adminModal").classList.contains("open")) refreshAdminTable();
+      render();
+      toast("Foto actualizada.");
+    }).catch(function(err){
+      toast("No se pudo actualizar la foto: " + (err && err.message ? err.message : err));
+    });
+  }
+
+  function dataSourceTable(){ return isPrevencion() ? "vw_procedimientos_prevencion" : "procedimientos"; }
+
+  function setStatus(mode){
+    var dot = q("statusDot"), lbl = q("statusLabel"), pill = q("rolePill");
+    if (runtime.profile){
+      pill.style.display = ""; pill.textContent = ROLE_LABELS[runtime.profile.rol] + " · " + runtime.profile.nombre;
+      q("btnAvatar").style.display = ""; q("btnAvatar").innerHTML = avatarHTML(runtime.profile);
+    } else { pill.style.display = "none"; q("btnAvatar").style.display = "none"; }
+
+    if (mode === "live"){
+      dot.className = "status-dot live";
+      lbl.textContent = hasRole() ? ((isPrevencion()||isOperaciones()) ? "Actualizando cada 15s" : "En vivo") : "En vivo · solo lectura";
+      q("banner").style.display = "none";
+    } else if (mode === "config"){
+      dot.className = "status-dot readonly"; lbl.textContent = "Falta configuración";
+      q("bannerText").textContent = "Reemplaza SUPABASE_URL y SUPABASE_ANON_KEY al inicio del script para activar la bitácora.";
+      q("banner").style.display = "block";
+    } else if (mode === "error"){
+      dot.className = "status-dot readonly"; lbl.textContent = "Sin conexión";
+      q("bannerText").textContent = "No se pudo conectar a la base de datos. Revisa tu conexión o permisos.";
+      q("banner").style.display = "block";
+    } else {
+      dot.className = "status-dot"; lbl.textContent = "Conectando…";
+    }
+
+    q("btnNew").style.display = isAdminOrGerencia() ? "" : "none";
+    q("btnUsuarios").style.display = isAdmin() ? "" : "none";
+    q("kpiWrap").style.display = isPrevencion() ? "none" : "";
+    q("legend").style.display = isPrevencion() ? "none" : "flex";
+  }
+
+  // ---------------- Pipeline / color stage ----------------
+  function stepDone(item, key){ var v = item[key]; return v === "Finalizado" || v === "Positivo" || v === "Si"; }
+  function stepBad(item, key){ return item[key] === "Negativo"; }
+  function progressOf(item){ var done=0; STEP_KEYS.forEach(function(k){ if (stepDone(item,k)) done++; }); return { pct: Math.round((done/STEP_KEYS.length)*100) }; }
+
+  function etapaActual(item){
+    if (item.validado === "Si") return "finalizado";
+    if (!(item.estado_grabacion === "Finalizado" && item.estado_edicion === "Finalizado" && item.revision1_estado === "Positivo")) return "produccion";
+    if (item.prevencion_estado !== "Positivo") return "prevencion";
+    if (item.operaciones_estado !== "Positivo") return "operaciones";
+    return "operaciones"; // listo para validar, se mantiene azul hasta que Admin/Gerencia marque Finalizado
+  }
+  var ETAPA_LABELS = { produccion:"Producción", prevencion:"Prevención", operaciones:"Operaciones", finalizado:"Finalizado" };
+
+  function stageList(){
+    var seen={}, out=[];
+    state.data.forEach(function(it){ if(!seen[it.etapa_num]){ seen[it.etapa_num]=true; out.push({num:it.etapa_num,titulo:it.etapa_titulo,desc:it.etapa_desc}); } });
+    out.sort(function(a,b){ return parseInt(a.num)-parseInt(b.num); });
+    return out;
+  }
+
+  function matchesFilters(it){
+    if (state.activeStage!=="todas" && it.etapa_num!==state.activeStage) return false;
+    if (state.estado && etapaActual(it) !== state.estado) return false;
+    if (state.search){
+      var s=state.search.toLowerCase();
+      var hay=((it.nombre||"")+" "+(it.codigo||"")+" "+(it.variante||"")).toLowerCase();
+      if (hay.indexOf(s)===-1) return false;
+    }
+    return true;
+  }
+
+  function renderKPIs(){
+    if (isPrevencion()) return;
+    var total=state.data.length;
+    var fin=state.data.filter(function(i){return i.estado_grabacion==="Finalizado";}).length;
+    var proc=state.data.filter(function(i){return i.estado_grabacion==="En Proceso";}).length;
+    var pend=state.data.filter(function(i){return i.estado_grabacion==="Pendiente";}).length;
+    var val=state.data.filter(function(i){return i.validado==="Si";}).length;
+    var globalPct = total ? Math.round(state.data.reduce(function(a,i){return a+progressOf(i).pct;},0)/total) : 0;
+    q("kpiTotal").textContent=total; q("kpiFinalizados").textContent=fin; q("kpiProceso").textContent=proc;
+    q("kpiPendientes").textContent=pend; q("kpiValidados").textContent=val;
+    q("kpiProgresoNum").textContent=globalPct+"%"; q("kpiProgresoBar").style.width=globalPct+"%";
+  }
+
+  function renderTabs(){
+    var stages=stageList();
+    var html='<button class="tab'+(state.activeStage==="todas"?" active":"")+'" data-stage="todas">Todas</button>';
+    stages.forEach(function(s){ html+='<button class="tab'+(state.activeStage===s.num?" active":"")+'" data-stage="'+s.num+'">Etapa '+s.num+' · '+escapeHtml(s.titulo)+'</button>'; });
+    els.stageTabs.innerHTML=html;
+    Array.prototype.forEach.call(els.stageTabs.querySelectorAll(".tab"), function(btn){ btn.addEventListener("click", function(){ state.activeStage=btn.getAttribute("data-stage"); render(); }); });
+  }
+
+  function segClass(item,key){ if (stepDone(item,key)) return "seg done"; if (stepBad(item,key)) return "seg warn"; return "seg"; }
+  function progressBarHTML(item){
+    return '<div class="progress-track">'+STEP_KEYS.map(function(k){return '<div class="'+segClass(item,k)+'"></div>';}).join("")+'</div>';
+  }
+
+  function thumbHTML(item){
+    var etapa = etapaActual(item);
+    var badge = '<span class="etapa-badge '+etapa+'">'+ETAPA_LABELS[etapa]+'</span>';
+    if (item.imagen_portada){
+      return '<div class="card-thumb">'+badge+'<img src="'+escapeHtml(item.imagen_portada)+'" alt="" loading="lazy" onerror="this.parentElement.querySelector(\'img\').style.display=\'none\';"><span class="thumb-code">'+escapeHtml(item.codigo)+'</span></div>';
+    }
+    return '<div class="card-thumb">'+badge+'<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#4690CE" stroke-width="1.6" opacity=".6"><rect x="2.5" y="5" width="14" height="14" rx="2"></rect><path d="M16.5 9.5 21 7v10l-4.5-2.5"></path></svg><span class="thumb-code">'+escapeHtml(item.codigo)+'</span></div>';
+  }
+
+  function cardHTML(item){
+    var etapa = etapaActual(item);
+    if (isPrevencion()){
+      var pp=progressOf(item);
+      return (
+        '<div class="card etapa-'+etapa+'" data-id="'+escapeHtml(item.id)+'">'+
+          thumbHTML(item)+
+          '<div class="card-top"><span class="card-code">'+escapeHtml(item.codigo)+'</span></div>'+
+          '<div><div class="card-title">'+escapeHtml(item.numero?(item.numero+". "):"")+escapeHtml(item.nombre||"(sin nombre)")+'</div>'+(item.variante?'<div class="card-variant">'+escapeHtml(item.variante)+'</div>':'')+'</div>'+
+          progressBarHTML(item)+
+          '<div class="progress-foot"><span>Estado Prevención: '+escapeHtml(item.prevencion_estado)+'</span><b>'+pp.pct+'%</b></div>'+
+        '</div>'
+      );
+    }
+    var p=progressOf(item);
+    var meta=[];
+    if (item.centro) meta.push("Centro: "+escapeHtml(item.centro));
+    if (item.barco) meta.push("Barco: "+escapeHtml(item.barco));
+    var metaHtml = meta.length ? '<div class="card-meta">'+meta.map(function(m){return "<span>"+m+"</span>";}).join("")+'</div>' : "";
+    return (
+      '<div class="card etapa-'+etapa+'" data-id="'+escapeHtml(item.id)+'">'+
+        thumbHTML(item)+
+        '<div class="card-top"><span class="card-code">'+escapeHtml(item.codigo)+'</span></div>'+
+        '<div><div class="card-title">'+escapeHtml(item.numero?(item.numero+". "):"")+escapeHtml(item.nombre||"(sin nombre)")+'</div>'+(item.variante?'<div class="card-variant">'+escapeHtml(item.variante)+'</div>':'')+'</div>'+
+        metaHtml+progressBarHTML(item)+
+        '<div class="progress-foot"><span>Avance del procedimiento</span><b>'+p.pct+'%</b></div>'+
+      '</div>'
+    );
+  }
+
+  function render(){
+    renderTabs(); renderKPIs();
+    var stages=stageList();
+    var visibleStages = state.activeStage==="todas" ? stages : stages.filter(function(s){return s.num===state.activeStage;});
+    var html=""; var totalVisible=0;
+    visibleStages.forEach(function(s){
+      var items=state.data.filter(function(it){return it.etapa_num===s.num && matchesFilters(it);});
+      if (!items.length) return;
+      totalVisible+=items.length;
+      html+='<div class="stage-section"><div class="stage-head"><span class="stage-num">ETAPA '+s.num+'</span><h2>'+escapeHtml(s.titulo)+'</h2><span class="stage-desc">'+escapeHtml(s.desc)+'</span><span class="stage-count">'+items.length+' procedimiento(s)</span></div><div class="cards-grid">'+items.map(cardHTML).join("")+'</div></div>';
+    });
+    if (!totalVisible){ html='<div class="empty-state">No hay procedimientos que coincidan con el filtro.</div>'; }
+    els.content.innerHTML=html;
+    Array.prototype.forEach.call(els.content.querySelectorAll(".card"), function(card){ card.addEventListener("click", function(){ openDrawer(card.getAttribute("data-id")); }); });
+  }
+
+  // ---------------- Video helpers ----------------
+  function youtubeId(url){
+    if (!url) return null;
+    var m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([A-Za-z0-9_-]{6,})/);
+    return m ? m[1] : null;
+  }
+  function videoDisplayHTML(item){
+    if (item.video_tipo === "youtube" && item.video_youtube_url){
+      var vid = youtubeId(item.video_youtube_url);
+      if (vid) return '<div class="video-embed"><iframe src="https://www.youtube.com/embed/'+vid+'" allowfullscreen></iframe></div>';
+      return '<div class="readonly-value">Enlace de YouTube no reconocido.</div>';
+    }
+    if (item.video_tipo === "archivo" && item.video_storage_path){
+      var url = SUPABASE_URL + "/storage/v1/object/public/videos-procedimientos/" + item.video_storage_path;
+      return '<div class="video-embed"><video src="'+escapeHtml(url)+'" controls preload="metadata"></video></div>';
+    }
+    return '<div class="readonly-value" style="color:var(--ink-soft);">Sin video cargado.</div>';
+  }
+
+  // ---------------- Drawer ----------------
+  function fieldSelect(id,value,options,disabled){ return '<select id="'+id+'"'+(disabled?" disabled":"")+'>'+options.map(function(o){return '<option value="'+o+'"'+(o===value?" selected":"")+'>'+o+'</option>';}).join("")+'</select>'; }
+
+  function legacyBoxHTML(item){
+    var rows = [];
+    if (item.rev1_prev_obs) rows.push(["Obs. Prevención (anterior)", item.rev1_prev_obs]);
+    if (item.rev1_ops_obs) rows.push(["Obs. Operaciones (anterior)", item.rev1_ops_obs]);
+    if (item.rev2_prev_obs) rows.push(["Obs. Prevención Rev.2 (anterior)", item.rev2_prev_obs]);
+    if (item.rev2_ops_obs) rows.push(["Obs. Operaciones Rev.2 (anterior)", item.rev2_ops_obs]);
+    if (item.obs_mantencion) rows.push(["Obs. Mantención (anterior)", item.obs_mantencion]);
+    if (!rows.length) return "";
+    return (
+      '<button type="button" class="legacy-toggle" id="legacyToggle">Ver notas previas (antes de octubre 2026)</button>'+
+      '<div class="legacy-box" id="legacyBox">'+rows.map(function(r){return '<div><b>'+escapeHtml(r[0])+':</b> '+escapeHtml(r[1])+'</div>';}).join("")+'</div>'
+    );
+  }
+
+  function canToggleObs(area){
+    return isAdminOrGerencia() || (area==="prevencion" && isPrevencion()) || (area==="operaciones" && isOperaciones());
+  }
+
+  function historyListHTML(area){
+    var list = state.observaciones[area] || [];
+    if (!list.length) return '<div class="history-empty">Sin observaciones registradas todavía.</div>';
+    var canToggle = canToggleObs(area);
+    return '<div class="history-list">'+list.map(function(o){
+      var corregido = o.estado === "corregido";
+      var badge = '<span class="obs-badge '+(corregido?"ok":"pend")+'">'+(corregido?"Corregido":"Pendiente")+'</span>';
+      var toggleBtn = canToggle ? ('<button type="button" class="obs-toggle-btn" data-obs-id="'+o.id+'" data-obs-area="'+area+'" data-obs-next="'+(corregido?"pendiente":"corregido")+'">'+(corregido?"Marcar pendiente":"Marcar corregido")+'</button>') : "";
+      return '<div class="history-item"><div class="history-item-head"><span class="when">'+fmtDate(o.creado_en)+'</span><span class="who who-wrap">'+avatarHTML(runtime.profilesById[o.usuario_id] || { nombre:o.usuario_nombre }, "sm")+escapeHtml(o.usuario_nombre)+'</span>'+badge+'</div><div class="txt">'+escapeHtml(o.texto)+'</div>'+(toggleBtn?('<div class="history-item-foot">'+toggleBtn+'</div>'):"")+'</div>';
+    }).join("")+'</div>';
+  }
+
+  function bindHistoryToggles(area){
+    var box = q("history_"+area);
+    if (!box) return;
+    Array.prototype.forEach.call(box.querySelectorAll(".obs-toggle-btn"), function(btn){
+      btn.addEventListener("click", function(){
+        toggleObservacionEstado(btn.getAttribute("data-obs-id"), area, btn.getAttribute("data-obs-next"));
+      });
+    });
+  }
+
+  function toggleObservacionEstado(id, area, nuevoEstado){
+    runtime.supabase.from("observaciones").update({ estado: nuevoEstado }).eq("id", id).then(function(res){
+      if (res.error){ toast("No se pudo actualizar: "+res.error.message); return; }
+      if (state.editingId) fetchObservaciones(state.editingId).then(function(){
+        var box = q("history_"+area);
+        if (box){ box.innerHTML = historyListHTML(area); bindHistoryToggles(area); }
+      });
+      toast(nuevoEstado === "corregido" ? "Marcada como corregida." : "Marcada como pendiente.");
+    });
+  }
+
+  function areaPanelHTML(item, area, label, canEdit, canSeeHistory){
+    var estadoField = area+"_estado", respField = area+"_responsable_id", fechaField = area+"_fecha";
+    var revEstados = ["Pendiente","Positivo"];
+    var respNombre = item[respField] && runtime.profilesById[item[respField]] ? runtime.profilesById[item[respField]].nombre : "";
+    return (
+      '<div class="field-group area-panel '+area+'"><legend>'+label+'</legend>'+
+        '<div class="field-row">'+
+          '<div class="field"><label>Estado</label>'+fieldSelect("f_"+estadoField, item[estadoField], revEstados, !canEdit)+'</div>'+
+          '<div class="field"><label>Responsable</label><div class="readonly-value">'+(respNombre||"—")+'</div></div>'+
+        '</div>'+
+        (item[fechaField] ? '<div class="field"><label>Última actualización</label><div class="readonly-value">'+fmtDate(item[fechaField])+'</div></div>' : '')+
+        (canSeeHistory ? ('<div class="field"><label>Historial de observaciones</label><div id="history_'+area+'">'+historyListHTML(area)+'</div></div>') : '')+
+        (canEdit ? (
+          '<div class="field"><label>Nueva observación</label><textarea id="obs_text_'+area+'" placeholder="Escribe tu observación..."></textarea></div>'+
+          '<button type="button" class="btn btn-outline btn-sm" id="obs_btn_'+area+'">Agregar observación</button>'
+        ) : "")+
+      '</div>'
+    );
+  }
+
+  function imageSectionHTML(item){
+    return (
+      '<div class="field-group"><legend>Imagen de portada</legend>'+
+        '<div class="thumb-preview" id="imgPreview">'+(item.imagen_portada?('<img src="'+escapeHtml(item.imagen_portada)+'" alt="">'):'Sin imagen')+'</div>'+
+        '<div class="dropzone" id="imgDropzone" style="margin-top:8px;"><span id="imgDropzoneText">Arrastra una imagen aquí o haz clic para seleccionarla</span><small>JPG o PNG, máx. 5MB</small></div>'+
+        '<input type="file" id="imgFileInput" accept="image/png,image/jpeg" hidden>'+
+        '<input type="hidden" id="f_imagen_portada" value="'+escapeHtml(item.imagen_portada)+'">'+
+        (item.imagen_portada ? '<button type="button" class="btn btn-outline btn-sm" id="btnRemoveImage" style="margin-top:8px;">Quitar imagen</button>' : '')+
+      '</div>'
+    );
+  }
+
+  function bindImageDropzone(){
+    var dz=q("imgDropzone"), input=q("imgFileInput");
+    if (!dz || !input) return;
+    dz.addEventListener("click", function(){ input.click(); });
+    dz.addEventListener("dragover", function(e){ e.preventDefault(); dz.classList.add("dragover"); });
+    dz.addEventListener("dragleave", function(){ dz.classList.remove("dragover"); });
+    dz.addEventListener("drop", function(e){ e.preventDefault(); dz.classList.remove("dragover"); if (e.dataTransfer.files[0]) handleImageFile(e.dataTransfer.files[0]); });
+    input.addEventListener("change", function(){ if (input.files[0]) handleImageFile(input.files[0]); });
+  }
+
+  function handleImageFile(file){
+    if (["image/jpeg","image/png"].indexOf(file.type) === -1){ toast("Selecciona una imagen JPG o PNG."); return; }
+    if (file.size > 5 * 1024 * 1024){ toast("La imagen no debe superar 5MB."); return; }
+    if (!runtime.session){ toast("Inicia sesión para subir imágenes."); return; }
+    var ext = (file.type === "image/png") ? "png" : "jpg";
+    var path = state.editingId + "-" + Date.now() + "." + ext;
+    var dzText = q("imgDropzoneText");
+    if (dzText) dzText.textContent = "Subiendo...";
+    runtime.supabase.storage.from("portadas").upload(path, file, { upsert:true, contentType:file.type }).then(function(res){
+      if (res.error){
+        toast("No se pudo subir la imagen: "+res.error.message);
+        if (dzText) dzText.textContent = "Arrastra una imagen aquí o haz clic para seleccionarla";
+        return;
+      }
+      var pub = runtime.supabase.storage.from("portadas").getPublicUrl(path);
+      var url = pub && pub.data ? pub.data.publicUrl : "";
+      var hidden = q("f_imagen_portada"); if (hidden) hidden.value = url;
+      var prev = q("imgPreview"); if (prev) prev.innerHTML = '<img src="'+escapeHtml(url)+'" alt="">';
+      if (dzText) dzText.textContent = "Arrastra una imagen aquí o haz clic para seleccionarla";
+      toast("Imagen subida. Guarda los cambios para aplicarla.");
+    });
+  }
+
+  function videoSectionHTML(item, canEdit){
+    var body = videoDisplayHTML(item);
+    if (!canEdit) return '<div class="field-group"><legend>Video del procedimiento</legend>'+body+'</div>';
+    var currentTipo = item.video_tipo || "youtube";
+    return (
+      '<div class="field-group"><legend>Video del procedimiento</legend>'+
+        body+
+        '<div class="video-tabs">'+
+          '<button type="button" class="video-tab'+(currentTipo==="youtube"?" active":"")+'" data-vtab="youtube">YouTube</button>'+
+          '<button type="button" class="video-tab'+(currentTipo==="archivo"?" active":"")+'" data-vtab="archivo">Subir archivo</button>'+
+        '</div>'+
+        '<div id="videoPaneYoutube" style="display:'+(currentTipo==="youtube"?"block":"none")+';">'+
+          '<div class="field"><label>Enlace de YouTube</label><input type="text" id="f_video_youtube_url" placeholder="https://www.youtube.com/watch?v=..." value="'+escapeHtml(item.video_youtube_url)+'"></div>'+
+        '</div>'+
+        '<div id="videoPaneArchivo" style="display:'+(currentTipo==="archivo"?"block":"none")+';">'+
+          '<div class="dropzone" id="videoDropzone"><span id="videoDropzoneText">Arrastra tu video aquí o haz clic para seleccionarlo</span><small>'+(item.video_nombre_archivo?("Actual: "+escapeHtml(item.video_nombre_archivo)):"MP4, MOV, etc.")+'</small></div>'+
+          '<input type="file" id="videoFileInput" accept="video/*" hidden>'+
+          '<div class="upload-progress-wrap" id="uploadProgressWrap" style="display:none;"><div class="upload-progress-bar"><div class="upload-progress-fill" id="uploadProgressFill"></div></div><div class="upload-progress-label"><span id="uploadProgressName"></span><span id="uploadProgressPct">0%</span></div></div>'+
+        '</div>'+
+        '<input type="hidden" id="f_video_tipo" value="'+escapeHtml(item.video_tipo||"")+'">'+
+        '<input type="hidden" id="f_video_storage_path" value="'+escapeHtml(item.video_storage_path)+'">'+
+        '<input type="hidden" id="f_video_nombre_archivo" value="'+escapeHtml(item.video_nombre_archivo)+'">'+
+        (item.video_tipo ? '<button type="button" class="btn btn-outline btn-sm" id="btnRemoveVideo" style="margin-top:8px;">Quitar video</button>' : '')+
+      '</div>'
+    );
+  }
+
+  function drawerFormHTML(item){
+    var estados = ["Pendiente","En Proceso","Finalizado"];
+    var revEstados = ["Pendiente","Positivo"];
+    var validadoOpts = ["Pendiente","Si"];
+    var modos = ["Único","Variante"];
+    var canAdminGerencia = isAdminOrGerencia();
+    var canPrevencion = isPrevencion();
+    var canOperaciones = isOperaciones();
+
+    if (canPrevencion){
+      // vista reducida: identificación mínima + video + panel propio
+      return (
+        '<div class="field-group"><legend>Identificación</legend>'+
+          '<div class="field"><label>Procedimiento</label><div class="readonly-value">'+escapeHtml(item.numero?(item.numero+". "):"")+escapeHtml(item.nombre)+'</div></div>'+
+          (item.variante ? '<div class="field"><label>Variante</label><div class="readonly-value">'+escapeHtml(item.variante)+'</div></div>' : '')+
+          '<div class="field"><label>Etapa</label><div class="readonly-value">'+escapeHtml(item.etapa_titulo)+'</div></div>'+
+        '</div>'+
+        videoSectionHTML(item, false)+
+        areaPanelHTML(item, "prevencion", "Prevención", true, true)
+      );
+    }
+
+    var html = '<div class="field-group"><legend>Identificación</legend>'+
+        '<div class="field-row">'+
+          '<div class="field"><label>N°</label>'+(canAdminGerencia?'<input type="text" id="f_numero" value="'+escapeHtml(item.numero)+'">':'<div class="readonly-value">'+escapeHtml(item.numero)+'</div>')+'</div>'+
+          '<div class="field"><label>Código de procedimiento</label>'+(canAdminGerencia?'<input type="text" id="f_codigo" value="'+escapeHtml(item.codigo)+'">':'<div class="readonly-value">'+escapeHtml(item.codigo)+'</div>')+'</div>'+
+        '</div>'+
+        '<div class="field-row single"><div class="field"><label>Procedimiento</label>'+(canAdminGerencia?'<input type="text" id="f_nombre" value="'+escapeHtml(item.nombre)+'">':'<div class="readonly-value">'+escapeHtml(item.nombre)+'</div>')+'</div></div>'+
+        '<div class="field-row">'+
+          '<div class="field"><label>Modo</label>'+(canAdminGerencia?fieldSelect("f_modo",item.modo,modos,false):'<div class="readonly-value">'+escapeHtml(item.modo)+'</div>')+'</div>'+
+          '<div class="field"><label>Etapa</label>'+(canAdminGerencia?'<input type="text" id="f_etapa_titulo" value="'+escapeHtml(item.etapa_titulo)+'">':'<div class="readonly-value">'+escapeHtml(item.etapa_titulo)+'</div>')+'</div>'+
+        '</div>'+
+        (item.variante ? ('<div class="field-row single"><div class="field"><label>Variante</label>'+(canAdminGerencia?'<input type="text" id="f_variante" value="'+escapeHtml(item.variante)+'">':'<div class="readonly-value">'+escapeHtml(item.variante)+'</div>')+'</div></div>') : (canAdminGerencia?'<div class="field-row single"><div class="field"><label>Variante</label><input type="text" id="f_variante" value=""></div></div>':''))+
+      '</div>';
+
+    if (canAdminGerencia) html += imageSectionHTML(item);
+
+    html += videoSectionHTML(item, canAdminGerencia);
+
+    html += '<div class="field-group"><legend>Grabación</legend>'+
+        '<div class="field-row">'+
+          '<div class="field"><label>Centro</label>'+(canAdminGerencia?'<input type="text" id="f_centro" value="'+escapeHtml(item.centro)+'">':'<div class="readonly-value">'+escapeHtml(item.centro||"—")+'</div>')+'</div>'+
+          '<div class="field"><label>Barco</label>'+(canAdminGerencia?'<input type="text" id="f_barco" value="'+escapeHtml(item.barco)+'">':'<div class="readonly-value">'+escapeHtml(item.barco||"—")+'</div>')+'</div>'+
+        '</div>'+
+        '<div class="field-row">'+
+          '<div class="field"><label>Fecha de grabación</label>'+(canAdminGerencia?'<input type="date" id="f_fecha_grabacion" value="'+escapeHtml(item.fecha_grabacion)+'">':'<div class="readonly-value">'+escapeHtml(item.fecha_grabacion||"—")+'</div>')+'</div>'+
+          '<div class="field"><label>Estado de grabación</label>'+(canAdminGerencia?fieldSelect("f_estado_grabacion",item.estado_grabacion,estados,false):'<div class="readonly-value">'+escapeHtml(item.estado_grabacion)+'</div>')+'</div>'+
+        '</div>'+
+      '</div>';
+
+    html += '<div class="field-group"><legend>Edición</legend><div class="field-row single"><div class="field"><label>Estado de edición</label>'+(canAdminGerencia?fieldSelect("f_estado_edicion",item.estado_edicion,estados,false):'<div class="readonly-value">'+escapeHtml(item.estado_edicion)+'</div>')+'</div></div></div>';
+
+    html += '<div class="field-group"><legend>Revisión 1</legend>'+
+        '<div class="field-row">'+
+          '<div class="field"><label>Estado</label>'+(canAdminGerencia?fieldSelect("f_revision1_estado",item.revision1_estado,revEstados,false):'<div class="readonly-value">'+escapeHtml(item.revision1_estado)+'</div>')+'</div>'+
+          '<div class="field"><label>Responsable</label>'+(canAdminGerencia?'<input type="text" id="f_revision1_responsable" value="'+escapeHtml(item.revision1_responsable)+'">':'<div class="readonly-value">'+escapeHtml(item.revision1_responsable||"—")+'</div>')+'</div>'+
+        '</div>'+
+      '</div>';
+
+    html += areaPanelHTML(item, "prevencion", "Prevención", false, true);
+    html += areaPanelHTML(item, "operaciones", "Operaciones", canOperaciones, true);
+
+    html += '<div class="field-group"><legend>Validación final</legend><div class="field-row single"><div class="field"><label>Estado</label>'+(canAdminGerencia?fieldSelect("f_validado",item.validado,validadoOpts,false):'<div class="readonly-value">'+escapeHtml(item.validado)+'</div>')+'</div></div></div>';
+
+    var legacy = legacyBoxHTML(item);
+    if (legacy) html += '<div class="field-group">'+legacy+'</div>';
+
+    return html;
+  }
+
+  function bindDrawerInteractions(item){
+    var legacyToggle = q("legacyToggle");
+    if (legacyToggle) legacyToggle.addEventListener("click", function(){ q("legacyBox").classList.toggle("open"); });
+
+    Array.prototype.forEach.call(document.querySelectorAll(".video-tab"), function(btn){
+      btn.addEventListener("click", function(){
+        Array.prototype.forEach.call(document.querySelectorAll(".video-tab"), function(b){ b.classList.remove("active"); });
+        btn.classList.add("active");
+        var tab = btn.getAttribute("data-vtab");
+        q("videoPaneYoutube").style.display = tab === "youtube" ? "block" : "none";
+        q("videoPaneArchivo").style.display = tab === "archivo" ? "block" : "none";
+        q("f_video_tipo").value = tab;
+      });
+    });
+
+    var ytInput = q("f_video_youtube_url");
+    if (ytInput) ytInput.addEventListener("change", function(){ q("f_video_tipo").value = "youtube"; });
+
+    bindImageDropzone();
+
+    var removeImageBtn = q("btnRemoveImage");
+    if (removeImageBtn) removeImageBtn.addEventListener("click", function(){
+      var hidden = q("f_imagen_portada"); if (hidden) hidden.value = "";
+      var prev = q("imgPreview"); if (prev) prev.innerHTML = "Sin imagen";
+      toast("Se quitará la imagen al guardar.");
+    });
+
+    bindVideoDropzone();
+
+    var removeVideoBtn = q("btnRemoveVideo");
+    if (removeVideoBtn) removeVideoBtn.addEventListener("click", function(){
+      q("f_video_tipo").value=""; q("f_video_storage_path").value=""; q("f_video_nombre_archivo").value="";
+      if (q("f_video_youtube_url")) q("f_video_youtube_url").value="";
+      toast("Se quitará el video al guardar.");
+    });
+
+    ["prevencion","operaciones"].forEach(function(area){
+      var btn = q("obs_btn_"+area);
+      if (btn) btn.addEventListener("click", function(){ submitObservacion(item.id, area); });
+      bindHistoryToggles(area);
+    });
+  }
+
+  function bindVideoDropzone(){
+    var dz=q("videoDropzone"), input=q("videoFileInput");
+    if (!dz || !input) return;
+    dz.addEventListener("click", function(){ input.click(); });
+    dz.addEventListener("dragover", function(e){ e.preventDefault(); dz.classList.add("dragover"); });
+    dz.addEventListener("dragleave", function(){ dz.classList.remove("dragover"); });
+    dz.addEventListener("drop", function(e){ e.preventDefault(); dz.classList.remove("dragover"); if (e.dataTransfer.files[0]) handleVideoFile(e.dataTransfer.files[0]); });
+    input.addEventListener("change", function(){ if (input.files[0]) handleVideoFile(input.files[0]); });
+  }
+
+  function handleVideoFile(file){
+    if (file.type.indexOf("video/") !== 0){ toast("Selecciona un archivo de video."); return; }
+    if (file.size > 300 * 1024 * 1024){ toast("El video no debe superar 300MB."); return; }
+    if (!runtime.session){ toast("Inicia sesión para subir videos."); return; }
+
+    var ext = (file.name.split(".").pop() || "mp4").toLowerCase().replace(/[^a-z0-9]/g,"") || "mp4";
+    var path = state.editingId + "-" + Date.now() + "." + ext;
+    var wrap = q("uploadProgressWrap"), fill = q("uploadProgressFill"), pctLbl = q("uploadProgressPct"), nameLbl = q("uploadProgressName");
+    wrap.style.display = "block"; nameLbl.textContent = file.name; fill.style.width = "0%"; pctLbl.textContent = "0%";
+
+    var xhr = new XMLHttpRequest();
+    var uploadUrl = SUPABASE_URL + "/storage/v1/object/videos-procedimientos/" + encodeURIComponent(path);
+    xhr.open("POST", uploadUrl, true);
+    xhr.setRequestHeader("Authorization", "Bearer " + runtime.session.access_token);
+    xhr.setRequestHeader("apikey", SUPABASE_ANON_KEY);
+    xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
+    xhr.setRequestHeader("x-upsert", "true");
+    xhr.upload.addEventListener("progress", function(e){
+      if (e.lengthComputable){ var pct = Math.round((e.loaded/e.total)*100); fill.style.width = pct+"%"; pctLbl.textContent = pct+"%"; }
+    });
+    xhr.onload = function(){
+      if (xhr.status >= 200 && xhr.status < 300){
+        pctLbl.textContent = "100% — listo";
+        q("f_video_tipo").value = "archivo";
+        q("f_video_storage_path").value = path;
+        q("f_video_nombre_archivo").value = file.name;
+        toast("Video subido. Recuerda guardar los cambios.");
+      } else {
+        toast("No se pudo subir el video (" + xhr.status + ").");
+        wrap.style.display = "none";
+      }
+    };
+    xhr.onerror = function(){ toast("Error de red subiendo el video."); wrap.style.display = "none"; };
+    xhr.send(file);
+  }
+
+  function openDrawer(id){
+    state.isNew=false; state.editingId=id;
+    var item=state.data.find(function(i){return i.id===id;});
+    if (!item) return;
+    q("drawerCode").textContent=item.codigo||"(sin código)"; q("drawerTitle").textContent=item.nombre||"(sin nombre)";
+    fetchObservaciones(id).then(function(){
+      q("drawerBody").innerHTML=drawerFormHTML(item);
+      var canEditAny = isAdminOrGerencia() || isPrevencion() || isOperaciones();
+      q("btnDelete").style.display=isAdmin()?"":"none";
+      q("btnSave").style.display=canEditAny?"":"none";
+      els.overlay.classList.add("open"); els.drawer.classList.add("open");
+      bindDrawerInteractions(item);
+    });
+  }
+
+  function newBlankItem(){
+    // El siguiente número se calcula mirando TANTO el id como el código de todos los procedimientos
+    // (pueden no coincidir) y se salta cualquier id ya usado, para no chocar con la llave primaria.
+    var maxNum=0, used={};
+    state.data.forEach(function(i){
+      used[i.id]=true; used[i.codigo]=true;
+      [i.id,i.codigo].forEach(function(v){ var n=parseInt(String(v||"").replace(/\D/g,""),10); if(!isNaN(n)&&n>maxNum) maxNum=n; });
+    });
+    var nextNum=maxNum+1, nextCode="PRO-"+String(nextNum).padStart(3,"0");
+    while (used[nextCode]){ nextNum++; nextCode="PRO-"+String(nextNum).padStart(3,"0"); }
+    var stages=stageList();
+    var lastStage=stages.length?stages[stages.length-1]:{num:"1",titulo:"NUEVA ETAPA",desc:""};
+    return { id:nextCode, numero:"", nombre:"", modo:"Único", variante:"", codigo:nextCode,
+      etapa_num: state.activeStage!=="todas"?state.activeStage:lastStage.num, etapa_titulo:lastStage.titulo, etapa_desc:lastStage.desc,
+      centro:"", barco:"", fecha_grabacion:null, estado_grabacion:"Pendiente", estado_edicion:"Pendiente",
+      revision1_estado:"Pendiente", revision1_responsable:"", revision1_fecha:null,
+      prevencion_estado:"Pendiente", prevencion_responsable_id:null, prevencion_fecha:null,
+      operaciones_estado:"Pendiente", operaciones_responsable_id:null, operaciones_fecha:null,
+      validado:"Pendiente", imagen_portada:"",
+      video_tipo:null, video_youtube_url:"", video_storage_path:"", video_nombre_archivo:"", video_actualizado_en:null,
+      nota_produccion:"" };
+  }
+
+  function openNewDrawer(){
+    if (!isAdminOrGerencia()) return;
+    state.isNew=true; var item=newBlankItem(); state.editingId=item.id;
+    q("drawerCode").textContent=item.codigo; q("drawerTitle").textContent="Nuevo procedimiento";
+    state.observaciones = {};
+    q("drawerBody").innerHTML=drawerFormHTML(item);
+    q("btnDelete").style.display=""; q("btnSave").style.display="";
+    els.overlay.classList.add("open"); els.drawer.classList.add("open");
+    bindDrawerInteractions(item);
+  }
+
+  function closeDrawer(){ els.overlay.classList.remove("open"); els.drawer.classList.remove("open"); state.editingId=null; state.isNew=false; }
+
+  function collectForm(existing){
+    var patch = Object.assign({}, existing);
+    if (isAdminOrGerencia()){
+      ["numero","codigo","nombre","etapa_titulo","variante","centro","barco"].forEach(function(f){ var el=q("f_"+f); if (el) patch[f]=el.value; });
+      if (q("f_modo")) patch.modo = q("f_modo").value;
+      if (q("f_fecha_grabacion")) patch.fecha_grabacion = q("f_fecha_grabacion").value || null;
+      if (q("f_estado_grabacion")) patch.estado_grabacion = q("f_estado_grabacion").value;
+      if (q("f_estado_edicion")) patch.estado_edicion = q("f_estado_edicion").value;
+      if (q("f_revision1_estado")) patch.revision1_estado = q("f_revision1_estado").value;
+      if (q("f_revision1_responsable")) patch.revision1_responsable = q("f_revision1_responsable").value;
+      if (q("f_validado")) patch.validado = q("f_validado").value;
+      if (q("f_imagen_portada")) patch.imagen_portada = q("f_imagen_portada").value;
+      if (q("f_video_tipo")) patch.video_tipo = q("f_video_tipo").value || null;
+      if (q("f_video_youtube_url")) patch.video_youtube_url = q("f_video_youtube_url").value.trim();
+      if (q("f_video_storage_path")) patch.video_storage_path = q("f_video_storage_path").value;
+      if (q("f_video_nombre_archivo")) patch.video_nombre_archivo = q("f_video_nombre_archivo").value;
+    }
+    if (q("f_prevencion_estado")) patch.prevencion_estado = q("f_prevencion_estado").value;
+    if (q("f_operaciones_estado")) patch.operaciones_estado = q("f_operaciones_estado").value;
+    patch.id = existing.id;
+    delete patch.etapa_desc_input;
+    return patch;
+  }
+
+  function saveDrawer(){
+    if (!hasRole()){ toast("No tienes permiso de edición."); return; }
+    var payload;
+    if (state.isNew){ var blank=newBlankItem(); blank.id=state.editingId; payload=collectForm(blank); }
+    else { var existing=state.data.find(function(i){return i.id===state.editingId;}); if(!existing) return; payload=collectForm(existing); }
+
+    // Un procedimiento nuevo se inserta (solo Admin/Gerencia llegan hasta aquí con state.isNew);
+    // uno existente se actualiza con UPDATE, nunca con upsert: upsert siempre intenta primero un
+    // INSERT, y la política de inserción solo permite Admin/Gerencia, por lo que Prevención y
+    // Operaciones (que sí pueden editar su propia sección de un procedimiento ya existente)
+    // recibían "new row violates row-level security policy" al guardar.
+    var req = state.isNew
+      ? runtime.supabase.from("procedimientos").insert(payload)
+      : runtime.supabase.from("procedimientos").update(payload).eq("id", state.editingId);
+
+    req.then(function(res){
+      // Si otra persona creó un procedimiento con ese mismo id mientras tanto, se reintenta con el siguiente libre.
+      if (res.error && state.isNew && res.error.code==="23505" && !saveDrawer._retried){
+        saveDrawer._retried = true;
+        return runtime.supabase.from(dataSourceTable()).select("id,codigo").then(function(all){
+          var used={}, maxNum=0;
+          (all.data||[]).forEach(function(i){ used[i.id]=true; used[i.codigo]=true; [i.id,i.codigo].forEach(function(v){ var n=parseInt(String(v||"").replace(/\D/g,""),10); if(!isNaN(n)&&n>maxNum) maxNum=n; }); });
+          var c="PRO-"+String(maxNum+1).padStart(3,"0");
+          while (used[c]){ maxNum++; c="PRO-"+String(maxNum+1).padStart(3,"0"); }
+          state.editingId = c; payload.id = c; payload.codigo = c;
+          return runtime.supabase.from("procedimientos").insert(payload).then(function(r2){ saveDrawer._retried=false; return r2; });
+        }).then(function(r2){
+          if (r2.error){ toast("No se pudo guardar: "+r2.error.message); return; }
+          toast("Procedimiento creado."); closeDrawer(); fetchAll();
+        });
+      }
+      saveDrawer._retried = false;
+      if (res.error){ console.error(res.error); toast("No se pudo guardar: "+res.error.message); return; }
+      toast(state.isNew?"Procedimiento creado.":"Cambios guardados.");
+      closeDrawer(); fetchAll();
+    });
+  }
+
+  function deleteItem(){
+    if (!isAdmin()){ toast("Solo un administrador puede eliminar."); return; }
+    if (state.isNew){ closeDrawer(); return; }
+    if (!confirm("¿Eliminar este procedimiento del seguimiento?")) return;
+    runtime.supabase.from("procedimientos").delete().eq("id", state.editingId).then(function(res){
+      if (res.error){ console.error(res.error); toast("No se pudo eliminar."); return; }
+      toast("Procedimiento eliminado."); closeDrawer(); fetchAll();
+    });
+  }
+
+  // ---------------- Observaciones ----------------
+  function fetchObservaciones(procedimientoId){
+    if (!runtime.session){ state.observaciones = {}; return Promise.resolve(); }
+    return runtime.supabase.from("observaciones").select("*").eq("procedimiento_id", procedimientoId).order("creado_en",{ascending:false}).then(function(res){
+      state.observaciones = {};
+      (res.data||[]).forEach(function(o){ (state.observaciones[o.area] = state.observaciones[o.area]||[]).push(o); });
+    });
+  }
+
+  function submitObservacion(procedimientoId, area){
+    var ta = q("obs_text_"+area);
+    var texto = ta.value.trim();
+    if (!texto){ toast("Escribe algo antes de guardar."); return; }
+    runtime.supabase.from("observaciones").insert({
+      procedimiento_id: procedimientoId, area: area,
+      usuario_id: runtime.session.user.id,
+      usuario_nombre: runtime.profile ? runtime.profile.nombre : "Usuario",
+      texto: texto
+    }).then(function(res){
+      if (res.error){ console.error(res.error); toast("No se pudo guardar la observación: "+res.error.message); return; }
+      ta.value = "";
+      fetchObservaciones(procedimientoId).then(function(){
+        var box = q("history_"+area);
+        if (box){ box.innerHTML = historyListHTML(area); bindHistoryToggles(area); }
+      });
+      toast("Observación guardada.");
+    });
+  }
+
+  // ---------------- Data fetch / realtime / polling ----------------
+  function fetchAll(){
+    runtime.supabase.from(dataSourceTable()).select("*").order("etapa_num").order("numero").then(function(res){
+      if (res.error){ console.error(res.error); setStatus("error"); return; }
+      state.data = res.data || [];
+      if (!state.data.length && isAdminOrGerencia()){ seedIfEmpty(); return; }
+      setStatus("live"); render();
+    });
+  }
+
+  function seedIfEmpty(){
+    var seeded=seedData();
+    runtime.supabase.from("procedimientos").insert(seeded).then(function(res){ if (res.error) console.error(res.error); fetchAll(); });
+  }
+
+  function teardownLiveUpdates(){
+    if (runtime.channel){ runtime.supabase.removeChannel(runtime.channel); runtime.channel = null; }
+    if (runtime.pollTimer){ clearInterval(runtime.pollTimer); runtime.pollTimer = null; }
+  }
+
+  function setupLiveUpdates(){
+    teardownLiveUpdates();
+    if (isPrevencion() || isOperaciones()){
+      // Realtime estándar no filtra por RLS: para estos roles usamos polling,
+      // que sí respeta exactamente los mismos permisos que una consulta normal.
+      runtime.pollTimer = setInterval(fetchAll, 15000);
+      return;
+    }
+    runtime.channel = runtime.supabase.channel("bitacora-realtime")
+      .on("postgres_changes", { event:"*", schema:"public", table:"procedimientos" }, function(){ fetchAll(); })
+      .on("postgres_changes", { event:"*", schema:"public", table:"observaciones" }, function(){
+        if (state.editingId) fetchObservaciones(state.editingId).then(function(){
+          ["prevencion","operaciones"].forEach(function(area){ var box=q("history_"+area); if (box){ box.innerHTML = historyListHTML(area); bindHistoryToggles(area); } });
+        });
+      })
+      .subscribe();
+  }
+
+  // ---------------- Auth ----------------
+  function loadProfile(){
+    if (!runtime.session){ runtime.profile = null; return Promise.resolve(); }
+    return runtime.supabase.from("profiles").select("id,nombre,rol,activo,avatar_url").eq("id", runtime.session.user.id).single().then(function(res){
+      if (res.error || !res.data || !res.data.activo){
+        runtime.profile = null;
+        if (res.data && !res.data.activo) toast("Tu cuenta está desactivada.");
+        return;
+      }
+      runtime.profile = res.data;
+    });
+  }
+
+  function loadProfilesList(){
+    if (!runtime.session) { runtime.profilesById = {}; return Promise.resolve(); }
+    return runtime.supabase.from("profiles").select("id,nombre,rol,activo,avatar_url").then(function(res){
+      runtime.profilesById = {};
+      (res.data||[]).forEach(function(p){ runtime.profilesById[p.id] = p; });
+    });
+  }
+
+  function doLogin(e){
+    if (e) e.preventDefault();
+    if (!runtime.supabase){ q("loginError").textContent = "Falta configuración de Supabase en el archivo."; q("loginError").style.display = "block"; return; }
+    var email=q("loginEmail").value.trim(), pass=q("loginPass").value;
+    if (!email || !pass) return;
+    var btn = q("loginSubmit");
+    if (btn){ btn.disabled = true; btn.textContent = "Ingresando..."; }
+    runtime.supabase.auth.signInWithPassword({ email:email, password:pass }).then(function(res){
+      if (btn){ btn.disabled = false; btn.textContent = "Iniciar sesión"; }
+      if (res.error){ q("loginError").textContent = "Credenciales incorrectas."; q("loginError").style.display="block"; return; }
+      q("loginError").style.display="none";
+      q("loginPass").value="";
+    });
+  }
+  function doLogout(){
+    runtime.supabase.auth.signOut().then(function(){
+      q("loginEmail").value=""; q("loginPass").value=""; q("loginError").style.display="none";
+    });
+  }
+
+  function onAuthChanged(){
+    if (!runtime.session){
+      runtime.profile = null;
+      teardownLiveUpdates();
+      q("appRoot").style.display = "none";
+      q("authScreen").style.display = "flex";
+      return;
+    }
+    q("authScreen").style.display = "none";
+    q("appRoot").style.display = "";
+    return loadProfile().then(loadProfilesList).then(function(){
+      setupLiveUpdates();
+      fetchAll();
+      setStatus("live");
+    });
+  }
+
+  // ---------------- Panel de usuarios (admin) ----------------
+  function edgeFunctionCall(payload){
+    if (!runtime.session || !runtime.session.access_token){
+      return Promise.resolve({ status:0, body:{ error:"Tu sesión expiró o no se cargó bien. Cierra sesión y vuelve a entrar, luego intenta de nuevo." } });
+    }
+    return fetch(SUPABASE_URL + "/functions/v1/admin-users", {
+      method: "POST",
+      headers: { "Content-Type":"application/json", "Authorization":"Bearer "+runtime.session.access_token, "apikey": SUPABASE_ANON_KEY },
+      body: JSON.stringify(payload)
+    }).then(function(r){
+      return r.json().catch(function(){ return {}; }).then(function(j){ return { status:r.status, body:j }; });
+    }).catch(function(err){
+      return { status:0, body:{ error:"No se pudo contactar la función admin-users (revisa que esté publicada, o tu conexión): " + (err && err.message ? err.message : err) } };
+    });
+  }
+
+  function openAdminPanel(){
+    q("adminModal").classList.add("open");
+    refreshAdminTable();
+  }
+  function closeAdminPanel(){ q("adminModal").classList.remove("open"); }
+
+  function refreshAdminTable(){
+    edgeFunctionCall({ action:"list" }).then(function(res){
+      if (res.status !== 200){ toast("No se pudo cargar usuarios: " + (res.body.error||"")); return; }
+      var rows = res.body.users.map(function(u){
+        var pf = runtime.profilesById[u.id] || u;
+        return '<tr><td><span class="who-wrap"><button type="button" class="avatar-edit" data-avatar="'+u.id+'" title="Cambiar foto de '+escapeHtml(u.nombre)+'">'+avatarHTML(pf, "lg")+'</button>'+escapeHtml(u.nombre)+'</span></td><td>'+escapeHtml(u.email||"")+'</td>'+
+          '<td><span class="role-tag '+u.rol+'">'+ROLE_LABELS[u.rol]+'</span></td>'+
+          '<td>'+(u.activo?'Activo':'Desactivado')+'</td>'+
+          '<td style="white-space:nowrap;"><button class="btn btn-outline btn-sm" data-toggle="'+u.id+'" data-activo="'+u.activo+'">'+(u.activo?'Desactivar':'Activar')+'</button> '+
+          '<button class="btn btn-outline btn-sm" data-reset="'+u.id+'">Resetear clave</button></td></tr>';
+      }).join("");
+      q("adminTableBody").innerHTML = rows;
+      Array.prototype.forEach.call(q("adminTableBody").querySelectorAll("[data-avatar]"), function(btn){
+        btn.addEventListener("click", function(){
+          var inp = document.createElement("input");
+          inp.type = "file"; inp.accept = "image/png,image/jpeg,image/webp";
+          inp.addEventListener("change", function(){ uploadAvatar(btn.getAttribute("data-avatar"), inp.files[0]); });
+          inp.click();
+        });
+      });
+      Array.prototype.forEach.call(q("adminTableBody").querySelectorAll("[data-toggle]"), function(btn){
+        btn.addEventListener("click", function(){
+          var id = btn.getAttribute("data-toggle");
+          var activo = btn.getAttribute("data-activo") === "true";
+          edgeFunctionCall({ action:"update", user_id:id, activo: !activo }).then(function(res){
+            if (res.status !== 200){ toast("Error: "+(res.body.error||"")); return; }
+            toast("Actualizado."); refreshAdminTable();
+          });
+        });
+      });
+      Array.prototype.forEach.call(q("adminTableBody").querySelectorAll("[data-reset]"), function(btn){
+        btn.addEventListener("click", function(){
+          var id = btn.getAttribute("data-reset");
+          var pass = prompt("Nueva contraseña para este usuario:");
+          if (!pass) return;
+          edgeFunctionCall({ action:"reset_password", user_id:id, password:pass }).then(function(res){
+            if (res.status !== 200){ toast("Error: "+(res.body.error||"")); return; }
+            toast("Contraseña actualizada.");
+          });
+        });
+      });
+    });
+  }
+
+  function submitNewUser(e){
+    e.preventDefault();
+    var nombre = q("nuNombre").value.trim(), email = q("nuEmail").value.trim(), pass = q("nuPass").value, rol = q("nuRol").value;
+    if (!nombre || !email || !pass) return;
+    edgeFunctionCall({ action:"create", nombre:nombre, email:email, password:pass, rol:rol }).then(function(res){
+      if (res.status !== 200){ toast("Error: "+(res.body.error||"")); return; }
+      toast("Usuario creado."); q("newUserForm").reset(); refreshAdminTable();
+    });
+  }
+
+  // ---------------- Init ----------------
+  function init(){
+    els.content=q("content"); els.stageTabs=q("stageTabs"); els.overlay=q("overlay"); els.drawer=q("drawer"); els.toast=q("toast");
+
+    q("btnNew").addEventListener("click", openNewDrawer);
+    q("drawerClose").addEventListener("click", closeDrawer);
+    q("btnCancel").addEventListener("click", closeDrawer);
+    q("btnSave").addEventListener("click", saveDrawer);
+    q("btnDelete").addEventListener("click", deleteItem);
+    els.overlay.addEventListener("click", closeDrawer);
+    q("searchInput").addEventListener("input", function(e){ state.search=e.target.value; render(); });
+    q("estadoFilter").addEventListener("change", function(e){ state.estado=e.target.value; render(); });
+    q("authForm").addEventListener("submit", doLogin);
+    q("btnLogout").addEventListener("click", doLogout);
+    q("btnAvatar").addEventListener("click", function(){ q("avatarFile").click(); });
+    q("avatarFile").addEventListener("change", function(e){
+      var f = e.target.files[0]; e.target.value = "";
+      if (f && runtime.session) uploadAvatar(runtime.session.user.id, f);
+    });
+    q("btnUsuarios").addEventListener("click", openAdminPanel);
+    q("adminClose").addEventListener("click", closeAdminPanel);
+    q("newUserForm").addEventListener("submit", submitNewUser);
+
+    state.data = seedData();
+    render();
+
+    if (!SUPABASE_URL || SUPABASE_URL.indexOf("TU_SUPABASE_URL") === 0 || !window.supabase){
+      setStatus("config");
+      q("loginError").textContent = "Falta configuración de Supabase en el archivo.";
+      q("loginError").style.display = "block";
+      return;
+    }
+
+    runtime.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    runtime.supabase.auth.onAuthStateChange(function(event, session){
+      runtime.session = session;
+      onAuthChanged();
+    });
+
+    runtime.supabase.auth.getSession().then(function(res){
+      runtime.session = res.data.session;
+      onAuthChanged();
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", init);
+})();
+</script>
+</body>
+</html>
