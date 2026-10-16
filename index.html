@@ -662,7 +662,7 @@
           '<div class="card-top"><span class="card-code">'+escapeHtml(item.codigo)+'</span></div>'+
           '<div><div class="card-title">'+escapeHtml(item.numero?(item.numero+". "):"")+escapeHtml(item.nombre||"(sin nombre)")+'</div>'+(item.variante?'<div class="card-variant">'+escapeHtml(item.variante)+'</div>':'')+'</div>'+
           progressBarHTML(item)+
-          '<div class="progress-foot"><span>Estado '+AREA_LABELS[ak]+': '+escapeHtml(item[ak+'_estado'])+'</span><b>'+pp.pct+'%</b></div>'+
+          (isDirector() ? '' : '<div class="progress-foot"><span>Estado '+AREA_LABELS[ak]+': '+escapeHtml(item[ak+'_estado'])+'</span><b>'+pp.pct+'%</b></div>')+
         '</div>'
       );
     }
@@ -887,7 +887,7 @@
           '<div class="field"><label>Etapa</label><div class="readonly-value">'+escapeHtml(item.etapa_titulo)+'</div></div>'+
         '</div>'+
         videoSectionHTML(item, false)+
-        areaPanelHTML(item, areaKey, AREA_LABELS[areaKey], !isDirector(), true)
+        (isDirector() ? "" : areaPanelHTML(item, areaKey, AREA_LABELS[areaKey], true, true))
       );
     }
 
