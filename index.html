@@ -1496,9 +1496,10 @@
       var rows = res.body.users.map(function(u){
         var pf = runtime.profilesById[u.id] || u;
         return '<tr><td><span class="who-wrap"><button type="button" class="avatar-edit" data-avatar="'+u.id+'" title="Cambiar foto de '+escapeHtml(u.nombre)+'">'+avatarHTML(pf, "lg")+'</button>'+escapeHtml(u.nombre)+'</span></td><td>'+escapeHtml(u.email||"")+'</td>'+
-          '<td><span class="role-tag '+u.rol+'">'+ROLE_LABELS[u.rol]+'</span></td>'+
+          '<td><select class="select-input" data-rol-user="'+u.id+'" data-rol-prev="'+u.rol+'"'+(runtime.session && u.id===runtime.session.user.id ? ' disabled title="No puedes cambiar tu propio rol"' : '')+'>'+Object.keys(ROLE_LABELS).map(function(k){ return '<option value="'+k+'"'+(k===u.rol?' selected':'')+'>'+ROLE_LABELS[k]+'</option>'; }).join("")+'</select></td>'+
           '<td>'+(u.activo?'Activo':'Desactivado')+'</td>'+
           '<td style="white-space:nowrap;"><button class="btn btn-outline btn-sm" data-toggle="'+u.id+'" data-activo="'+u.activo+'">'+(u.activo?'Desactivar':'Activar')+'</button> '+
+          '<button class="btn btn-outline btn-sm" data-rename="'+u.id+'" data-name="'+escapeHtml(u.nombre)+'">Cambiar nombre</button> '+
           '<button class="btn btn-outline btn-sm" data-reset="'+u.id+'">Resetear clave</button> '+
           (runtime.session && u.id === runtime.session.user.id ? '' : '<button class="btn btn-outline btn-sm" style="color:var(--red);border-color:var(--red);" data-del-user="'+u.id+'" data-del-name="'+escapeHtml(u.nombre)+'">Eliminar</button>')+'</td></tr>';
       }).join("");
@@ -1518,6 +1519,27 @@
           edgeFunctionCall({ action:"update", user_id:id, activo: !activo }).then(function(res){
             if (res.status !== 200){ toast("Error: "+(res.body.error||"")); return; }
             toast("Actualizado."); refreshAdminTable();
+          });
+        });
+      });
+      Array.prototype.forEach.call(q("adminTableBody").querySelectorAll("[data-rol-user]"), function(sel){
+        sel.addEventListener("change", function(){
+          var id = sel.getAttribute("data-rol-user");
+          edgeFunctionCall({ action:"update", user_id:id, rol:sel.value }).then(function(res){
+            if (res.status !== 200){ toast("Error: "+(res.body.error||"")); sel.value = sel.getAttribute("data-rol-prev"); return; }
+            sel.setAttribute("data-rol-prev", sel.value);
+            toast("Categoría actualizada. La persona verá el cambio al recargar la app.");
+            loadProfilesList().then(function(){ refreshAdminTable(); });
+          });
+        });
+      });
+      Array.prototype.forEach.call(q("adminTableBody").querySelectorAll("[data-rename]"), function(btn){
+        btn.addEventListener("click", function(){
+          var nombre = prompt("Nuevo nombre:", btn.getAttribute("data-name"));
+          if (!nombre || !nombre.trim()) return;
+          edgeFunctionCall({ action:"update", user_id:btn.getAttribute("data-rename"), nombre:nombre.trim() }).then(function(res){
+            if (res.status !== 200){ toast("Error: "+(res.body.error||"")); return; }
+            toast("Nombre actualizado."); loadProfilesList().then(function(){ refreshAdminTable(); });
           });
         });
       });
