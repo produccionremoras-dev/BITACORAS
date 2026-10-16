@@ -489,6 +489,7 @@
   function isAdminOrGerencia(){ return isAdmin() || isGerencia(); }
   function isPrevencion(){ return myRole() === "prevencion"; }
   function isOperaciones(){ return myRole() === "operaciones"; }
+  function isDirector(){ return realRole() === "director"; } // solo lectura
   function isMantencion(){ return myRole() === "mantencion"; }
   // Vista reducida (solo su área): Prevención/Director y Jefe Mantención
   function isAreaOnly(){ return isPrevencion() || isMantencion(); }
@@ -734,6 +735,7 @@
   }
 
   function canToggleObs(area){
+    if (isDirector()) return false;
     return isAdminOrGerencia() || (area==="prevencion" && isPrevencion()) || (area==="operaciones" && isOperaciones()) || (area==="mantencion" && isMantencion());
   }
 
@@ -885,7 +887,7 @@
           '<div class="field"><label>Etapa</label><div class="readonly-value">'+escapeHtml(item.etapa_titulo)+'</div></div>'+
         '</div>'+
         videoSectionHTML(item, false)+
-        areaPanelHTML(item, areaKey, AREA_LABELS[areaKey], true, true)
+        areaPanelHTML(item, areaKey, AREA_LABELS[areaKey], !isDirector(), true)
       );
     }
 
@@ -1058,7 +1060,7 @@
     q("drawerCode").textContent=item.codigo||"(sin código)"; q("drawerTitle").textContent=item.nombre||"(sin nombre)";
     fetchObservaciones(id).then(function(){
       q("drawerBody").innerHTML=drawerFormHTML(item);
-      var canEditAny = isAdminOrGerencia() || isPrevencion() || isOperaciones() || isMantencion();
+      var canEditAny = !isDirector() && (isAdminOrGerencia() || isPrevencion() || isOperaciones() || isMantencion());
       q("btnDelete").style.display=isAdmin()?"":"none";
       q("btnSave").style.display=canEditAny?"":"none";
       els.overlay.classList.add("open"); els.drawer.classList.add("open");
